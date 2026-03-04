@@ -1,0 +1,203 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace;
+}
+
+/* ============================================
+   Color System — Dark-first Developer Tool
+   ============================================ */
+
+:root {
+  /* Surfaces */
+  --surface-base: #09090b;
+  --surface-raised: #131316;
+  --surface-overlay: #1c1c21;
+  --surface-hover: #27272a;
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-emphasis: rgba(255, 255, 255, 0.16);
+
+  /* Text */
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --text-disabled: #52525b;
+
+  /* Accent — teal */
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-glow: rgba(45, 212, 191, 0.15);
+  --accent-muted: rgba(45, 212, 191, 0.08);
+
+  /* Model tiers */
+  --model-opus: #c084fc;
+  --model-sonnet: #60a5fa;
+  --model-haiku: #fbbf24;
+
+  /* Semantic */
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --error: #f87171;
+}
+
+/* ============================================
+   Typography Scale
+   ============================================ */
+
+.text-page-title {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.text-section-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+/* ============================================
+   Graph Canvas
+   ============================================ */
+
+.vue-flow {
+  --vf-node-bg: transparent;
+  --vf-node-color: var(--text-primary);
+  --vf-handle: var(--accent);
+  --vf-connection-path: var(--accent);
+  --vf-box-shadow: none;
+}
+
+.vue-flow__background {
+  background-color: var(--surface-base) !important;
+}
+
+/* Dot grid */
+.graph-canvas {
+  background-color: var(--surface-base);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Node styles */
+.graph-node {
+  border: 1px solid var(--border-default);
+  background: rgba(19, 19, 22, 0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.graph-node:hover {
+  border-color: var(--border-emphasis);
+}
+
+.graph-node--agent:hover {
+  box-shadow: 0 0 24px var(--node-glow, rgba(255, 255, 255, 0.06));
+}
+
+.graph-node--command {
+  padding: 8px 12px;
+}
+
+/* Controls restyle */
+.vue-flow__controls {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+.vue-flow__controls-button {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-secondary) !important;
+  fill: var(--text-secondary) !important;
+}
+
+.vue-flow__controls-button:hover {
+  background: var(--surface-hover) !important;
+  color: var(--text-primary) !important;
+  fill: var(--text-primary) !important;
+}
+
+/* Minimap restyle */
+.vue-flow__minimap {
+  background: var(--surface-raised) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: 8px !important;
+}
+
+/* ============================================
+   Page Transitions
+   ============================================ */
+
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+/* Focus ring */
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  box-shadow: 0 0 0 2px var(--surface-base), 0 0 0 4px var(--accent);
+  border-radius: inherit;
+}
+
+/* Glow effect for accent elements */
+.glow-accent {
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.14);
+}

@@ -1,0 +1,24 @@
+{
+  "name": "agents-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^3",
+    "@vue-flow/controls": "^1.1",
+    "@vue-flow/core": "^1.41",
+    "@vue-flow/minimap": "^1.5",
+    "nuxt": "^3.16",
+    "yaml": "^2.6"
+  },
+  "devDependencies": {
+    "@iconify-json/lucide": "^1.2.95",
+    "typescript": "^5.7"
+  }
+}

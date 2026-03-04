@@ -1,0 +1,65 @@
+export type AgentModel = 'opus' | 'sonnet' | 'haiku'
+export type AgentMemory = 'user' | 'project' | 'none'
+
+export interface AgentFrontmatter {
+  name: string
+  description: string
+  model?: AgentModel
+  color?: string
+  memory?: AgentMemory
+}
+
+export interface Agent {
+  slug: string
+  filename: string
+  frontmatter: AgentFrontmatter
+  body: string
+  hasMemory: boolean
+  filePath: string
+}
+
+export interface CommandFrontmatter {
+  name: string
+  description: string
+  'argument-hint'?: string
+  'allowed-tools'?: string[]
+}
+
+export interface Command {
+  slug: string
+  filename: string
+  directory: string
+  frontmatter: CommandFrontmatter
+  body: string
+  filePath: string
+}
+
+export interface Settings {
+  hooks?: Record<string, unknown[]>
+  enabledPlugins?: Record<string, boolean>
+  statusLine?: { type: string; command: string }
+  alwaysThinkingEnabled?: boolean
+  [key: string]: unknown
+}
+
+export type RelationshipType = 'spawns' | 'agent-frontmatter' | 'spawned-by'
+
+export interface Relationship {
+  sourceType: 'agent' | 'command'
+  sourceSlug: string
+  targetType: 'agent' | 'command'
+  targetSlug: string
+  type: RelationshipType
+  evidence: string
+}
+
+export interface AgentPayload {
+  frontmatter: AgentFrontmatter
+  body: string
+}
+
+export interface CommandPayload {
+  frontmatter: CommandFrontmatter
+  body: string
+  directory?: string
+}
