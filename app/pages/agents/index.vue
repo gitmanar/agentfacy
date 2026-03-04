@@ -31,12 +31,10 @@ const filteredAgents = computed(() => {
     <div class="px-6 py-4">
       <!-- Search -->
       <div class="mb-4">
-        <UInput
+        <input
           v-model="searchQuery"
           placeholder="Search agents..."
-          icon="i-lucide-search"
-          size="sm"
-          class="max-w-xs"
+          class="field-search max-w-xs"
         />
       </div>
 

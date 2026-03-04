@@ -125,25 +125,27 @@ const lineCount = computed(() => body.value.split('\n').length)
       >
         <h3 class="text-section-label">Configuration</h3>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <UFormField label="Name">
-            <UInput v-model="frontmatter.name" size="sm" />
-          </UFormField>
-          <UFormField label="Argument Hint">
-            <UInput v-model="frontmatter['argument-hint']" size="sm" placeholder="<phase-number>" />
-          </UFormField>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="field-group">
+            <label class="field-label">Name</label>
+            <input v-model="frontmatter.name" class="field-input" />
+          </div>
+          <div class="field-group">
+            <label class="field-label">Argument Hint</label>
+            <input v-model="frontmatter['argument-hint']" class="field-input" placeholder="<phase-number>" />
+          </div>
         </div>
 
-        <UFormField label="Description">
-          <UTextarea v-model="frontmatter.description" :rows="2" size="sm" />
-        </UFormField>
+        <div class="field-group">
+          <label class="field-label">Description</label>
+          <textarea v-model="frontmatter.description" rows="2" class="field-textarea" />
+        </div>
 
-        <UFormField label="Allowed Tools">
-          <UInput v-model="allowedToolsStr" size="sm" placeholder="Read, Write, Bash, Glob, Grep" />
-          <template #hint>
-            <span class="text-[10px]" style="color: var(--text-disabled);">Comma-separated list</span>
-          </template>
-        </UFormField>
+        <div class="field-group">
+          <label class="field-label">Allowed Tools</label>
+          <input v-model="allowedToolsStr" class="field-input" placeholder="Read, Write, Bash, Glob, Grep" />
+          <span class="field-hint">Comma-separated list</span>
+        </div>
       </div>
 
       <!-- Command Body Editor -->
@@ -164,8 +166,8 @@ const lineCount = computed(() => body.value.split('\n').length)
         </div>
         <textarea
           v-model="body"
-          class="w-full resize-none font-mono text-[13px] leading-relaxed p-4 focus:outline-none"
-          style="background: var(--surface-base); color: var(--text-primary); min-height: 500px;"
+          class="editor-textarea"
+          style="min-height: 500px;"
           spellcheck="false"
           placeholder="Command instructions..."
         />

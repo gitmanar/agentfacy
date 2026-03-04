@@ -166,6 +166,311 @@
 }
 
 /* ============================================
+   Form Elements
+   ============================================ */
+
+/* Field group (replaces UFormField) */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Label */
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+}
+
+.field-label[data-required]::after {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* Shared base input styles */
+.field-input,
+.field-select,
+.field-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.field-input::placeholder,
+.field-textarea::placeholder {
+  color: var(--text-disabled);
+  font-family: var(--font-sans);
+  font-size: 13px;
+}
+
+.field-input:hover,
+.field-select:hover,
+.field-textarea:hover {
+  border-color: var(--border-default);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.field-input:focus,
+.field-select:focus,
+.field-textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Native select with custom chevron */
+.field-select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 32px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+}
+
+/* Textarea */
+.field-textarea {
+  resize: vertical;
+  min-height: 56px;
+  line-height: 1.6;
+}
+
+/* Search input with embedded icon */
+.field-search {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 12px 8px 36px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 12px center;
+  background-size: 14px;
+}
+
+.field-search::placeholder {
+  color: var(--text-disabled);
+}
+
+.field-search:hover {
+  border-color: var(--border-default);
+  background-color: rgba(255, 255, 255, 0.045);
+}
+
+.field-search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Hint text below fields */
+.field-hint {
+  font-size: 10px;
+  color: var(--text-disabled);
+}
+
+/* Editor textarea (system prompt, command body, JSON, etc.) */
+.editor-textarea {
+  width: 100%;
+  resize: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 16px;
+  background: var(--surface-base);
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  min-height: 500px;
+}
+
+.editor-textarea::placeholder {
+  color: var(--text-disabled);
+}
+
+/* Standalone editor (used inside modals without a card wrapper) */
+.editor-textarea--standalone {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  min-height: 200px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.editor-textarea--standalone:hover {
+  border-color: var(--border-default);
+}
+
+.editor-textarea--standalone:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ---- Pill picker (segmented control for model, memory, etc.) ---- */
+
+.pill-picker {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+}
+
+.pill-picker__option {
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-disabled);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: transparent;
+  white-space: nowrap;
+}
+
+.pill-picker__option:hover {
+  color: var(--text-secondary);
+}
+
+.pill-picker__option--active {
+  color: var(--text-primary);
+  background: var(--surface-overlay);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Model-colored active states */
+.pill-picker__option--opus.pill-picker__option--active {
+  background: rgba(192, 132, 252, 0.12);
+  color: var(--model-opus);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(192, 132, 252, 0.2);
+}
+
+.pill-picker__option--sonnet.pill-picker__option--active {
+  background: rgba(96, 165, 250, 0.12);
+  color: var(--model-sonnet);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(96, 165, 250, 0.2);
+}
+
+.pill-picker__option--haiku.pill-picker__option--active {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--model-haiku);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(251, 191, 36, 0.2);
+}
+
+/* ---- Color swatch picker ---- */
+
+.color-picker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.color-picker__swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  outline: none;
+  padding: 0;
+}
+
+.color-picker__swatch:hover {
+  transform: scale(1.2);
+}
+
+.color-picker__swatch--active {
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 2px var(--surface-base), 0 0 12px var(--swatch-glow, rgba(255, 255, 255, 0.15));
+  transform: scale(1.1);
+}
+
+.color-picker__swatch:focus-visible {
+  box-shadow: 0 0 0 2px var(--surface-base), 0 0 0 4px var(--accent);
+}
+
+/* ---- Custom toggle switch ---- */
+
+.field-toggle {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+  user-select: none;
+}
+
+.field-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.field-toggle__track {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--surface-hover);
+  border: 1px solid var(--border-default);
+  transition: background 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.field-toggle input:checked + .field-toggle__track {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.field-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s cubic-bezier(0.65, 0, 0.35, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.field-toggle input:checked + .field-toggle__track .field-toggle__thumb {
+  transform: translateX(16px);
+}
+
+.field-toggle:focus-within .field-toggle__track {
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* ============================================
    Utility Classes
    ============================================ */
 

@@ -3,12 +3,13 @@ const route = useRoute()
 const { claudeDir, load: loadConfig } = useClaudeDir()
 const { fetchAll: fetchAgents, agents } = useAgents()
 const { fetchAll: fetchCommands, commands } = useCommands()
+const { fetchAll: fetchPlugins, plugins } = usePlugins()
 
 const initialized = ref(false)
 
 onMounted(async () => {
   await loadConfig()
-  await Promise.all([fetchAgents(), fetchCommands()])
+  await Promise.all([fetchAgents(), fetchCommands(), fetchPlugins()])
   initialized.value = true
 })
 
@@ -16,6 +17,7 @@ const navLinks = [
   { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
   { label: 'Agents', icon: 'i-lucide-cpu', to: '/agents' },
   { label: 'Commands', icon: 'i-lucide-terminal', to: '/commands' },
+  { label: 'Plugins', icon: 'i-lucide-puzzle', to: '/plugins' },
 ]
 
 const navSecondary = [
@@ -31,6 +33,7 @@ function isActive(to: string) {
 function badgeFor(to: string) {
   if (to === '/agents') return agents.value.length || null
   if (to === '/commands') return commands.value.length || null
+  if (to === '/plugins') return plugins.value.length || null
   return null
 }
 </script>

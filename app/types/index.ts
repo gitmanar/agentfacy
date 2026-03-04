@@ -63,3 +63,36 @@ export interface CommandPayload {
   body: string
   directory?: string
 }
+
+export interface Plugin {
+  id: string
+  name: string
+  marketplace: string
+  description: string
+  version: string
+  enabled: boolean
+  installedAt: string
+  lastUpdated: string
+  installPath: string
+  skills: string[]
+  author?: { name: string; email?: string }
+}
+
+export interface SkillFrontmatter {
+  name: string
+  description: string
+  context?: string
+  agent?: string
+  [key: string]: unknown
+}
+
+export interface Skill {
+  slug: string
+  frontmatter: SkillFrontmatter
+  body: string
+  filePath: string
+}
+
+export interface PluginDetail extends Plugin {
+  skillDetails: Skill[]
+}

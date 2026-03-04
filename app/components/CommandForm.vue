@@ -60,45 +60,43 @@ async function save() {
   <div class="p-6 space-y-4" style="background: var(--surface-overlay);">
     <h3 class="text-page-title">New Command</h3>
 
-    <div class="grid grid-cols-2 gap-4">
-      <UFormField label="Name" required>
-        <UInput v-model="frontmatter.name" size="sm" placeholder="my-command" />
-        <template #hint>
-          <span class="text-[10px]" style="color: var(--text-disabled);">e.g. gsd:my-command</span>
-        </template>
-      </UFormField>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="field-group">
+        <label class="field-label" data-required>Name</label>
+        <input v-model="frontmatter.name" class="field-input" placeholder="my-command" />
+        <span class="field-hint">e.g. gsd:my-command</span>
+      </div>
 
-      <UFormField label="Directory">
-        <UInput v-model="directory" size="sm" placeholder="gsd" :list="existingDirs.length > 0 ? 'dirs-list' : undefined" />
+      <div class="field-group">
+        <label class="field-label">Directory</label>
+        <input v-model="directory" class="field-input" placeholder="gsd" :list="existingDirs.length > 0 ? 'dirs-list' : undefined" />
         <datalist v-if="existingDirs.length > 0" id="dirs-list">
           <option v-for="d in existingDirs" :key="d" :value="d" />
         </datalist>
-        <template #hint>
-          <span class="text-[10px]" style="color: var(--text-disabled);">Subdirectory inside commands/</span>
-        </template>
-      </UFormField>
+        <span class="field-hint">Subdirectory inside commands/</span>
+      </div>
     </div>
 
-    <UFormField label="Description" required>
-      <UTextarea v-model="frontmatter.description" :rows="2" size="sm" placeholder="What this command does..." />
-    </UFormField>
+    <div class="field-group">
+      <label class="field-label" data-required>Description</label>
+      <textarea v-model="frontmatter.description" rows="2" class="field-textarea" placeholder="What this command does..." />
+    </div>
 
-    <UFormField label="Allowed Tools">
-      <UInput v-model="allowedToolsStr" size="sm" placeholder="Read, Write, Bash, Glob, Grep" />
-      <template #hint>
-        <span class="text-[10px]" style="color: var(--text-disabled);">Comma-separated list</span>
-      </template>
-    </UFormField>
+    <div class="field-group">
+      <label class="field-label">Allowed Tools</label>
+      <input v-model="allowedToolsStr" class="field-input" placeholder="Read, Write, Bash, Glob, Grep" />
+      <span class="field-hint">Comma-separated list</span>
+    </div>
 
-    <UFormField label="Command Body">
+    <div class="field-group">
+      <label class="field-label">Command Body</label>
       <textarea
         v-model="body"
-        class="w-full resize-none font-mono text-[13px] leading-relaxed p-3 rounded-lg focus:outline-none"
-        style="background: var(--surface-base); color: var(--text-primary); border: 1px solid var(--border-default); min-height: 200px;"
+        class="editor-textarea editor-textarea--standalone"
         spellcheck="false"
         placeholder="<objective>..."
       />
-    </UFormField>
+    </div>
 
     <div class="flex justify-end gap-2 pt-2">
       <UButton label="Cancel" variant="ghost" color="neutral" size="sm" @click="emit('cancel')" />

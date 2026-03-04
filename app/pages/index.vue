@@ -4,6 +4,7 @@ import { getAgentColor, modelColors } from '~/utils/colors'
 const { claudeDir, set: setDir } = useClaudeDir()
 const { agents, fetchAll: fetchAgents } = useAgents()
 const { commands, fetchAll: fetchCommands } = useCommands()
+const { plugins, fetchAll: fetchPlugins } = usePlugins()
 const { settings, load: loadSettings } = useSettings()
 
 const dirInput = ref('')
@@ -11,23 +12,18 @@ const settingDir = ref(false)
 
 onMounted(async () => {
   dirInput.value = claudeDir.value || ''
-  await loadSettings()
+  await Promise.all([loadSettings(), fetchPlugins()])
 })
 
 async function changeDir() {
   settingDir.value = true
   try {
     await setDir(dirInput.value)
-    await Promise.all([fetchAgents(), fetchCommands(), loadSettings()])
+    await Promise.all([fetchAgents(), fetchCommands(), fetchPlugins(), loadSettings()])
   } finally {
     settingDir.value = false
   }
 }
-
-const pluginCount = computed(() => {
-  if (!settings.value?.enabledPlugins) return 0
-  return Object.values(settings.value.enabledPlugins).filter(Boolean).length
-})
 
 const commandGroups = computed(() => {
   const groups = new Set<string>()
@@ -66,11 +62,10 @@ const totalChars = computed(() =>
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-folder" class="size-4 shrink-0" style="color: var(--text-disabled);" />
           <form class="flex-1 flex gap-2" @submit.prevent="changeDir">
-            <UInput
+            <input
               v-model="dirInput"
               placeholder="~/.claude"
-              size="sm"
-              class="flex-1"
+              class="field-input flex-1"
             />
             <UButton type="submit" :loading="settingDir" label="Load" size="sm" variant="soft" />
           </form>
@@ -109,13 +104,16 @@ const totalChars = computed(() =>
           <div class="text-[11px] mt-1" style="color: var(--text-disabled);">Groups</div>
         </div>
 
-        <div
-          class="rounded-xl p-4"
+        <NuxtLink
+          to="/plugins"
+          class="rounded-xl p-4 transition-all duration-150 focus-ring"
           style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+          @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'"
+          @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'"
         >
-          <div class="font-mono text-[24px] font-bold" style="color: var(--text-primary);">{{ pluginCount }}</div>
+          <div class="font-mono text-[24px] font-bold" style="color: var(--text-primary);">{{ plugins.length }}</div>
           <div class="text-[11px] mt-1" style="color: var(--text-disabled);">Plugins</div>
-        </div>
+        </NuxtLink>
 
         <div
           class="rounded-xl p-4"

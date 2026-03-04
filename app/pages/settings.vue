@@ -108,11 +108,16 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
             style="background: rgba(255,255,255,0.02);"
           >
             <span class="font-mono text-[12px]" style="color: var(--text-secondary);">{{ plugin.name }}</span>
-            <USwitch
-              :model-value="plugin.enabled"
-              size="sm"
-              @update:model-value="(val: boolean) => togglePlugin(plugin.name, val)"
-            />
+            <label class="field-toggle">
+              <input
+                type="checkbox"
+                :checked="plugin.enabled"
+                @change="togglePlugin(plugin.name, ($event.target as HTMLInputElement).checked)"
+              />
+              <span class="field-toggle__track">
+                <span class="field-toggle__thumb" />
+              </span>
+            </label>
           </div>
         </div>
       </div>
@@ -187,8 +192,8 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
         </div>
         <textarea
           v-model="rawJson"
-          class="w-full resize-none font-mono text-[13px] leading-relaxed p-4 focus:outline-none"
-          style="background: var(--surface-base); color: var(--text-primary); min-height: 600px;"
+          class="editor-textarea"
+          style="min-height: 600px;"
           spellcheck="false"
         />
       </div>

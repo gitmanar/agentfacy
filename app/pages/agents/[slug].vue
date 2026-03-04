@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Agent, AgentFrontmatter } from '~/types'
-import { getAgentColor } from '~/utils/colors'
+import { getAgentColor, modelColors, agentColorMap } from '~/utils/colors'
 
 const route = useRoute()
 const router = useRouter()
@@ -65,6 +65,8 @@ if (import.meta.client) {
 
 const charCount = computed(() => body.value.length)
 const lineCount = computed(() => body.value.split('\n').length)
+
+const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ value, hex }))
 </script>
 
 <template>
@@ -104,60 +106,146 @@ const lineCount = computed(() => body.value.split('\n').length)
     <div v-if="agent" class="px-6 py-4 space-y-6">
       <!-- Configuration -->
       <div
-        class="rounded-xl p-5 space-y-4"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+        class="rounded-xl overflow-hidden"
+        style="border: 1px solid var(--border-subtle);"
       >
-        <h3 class="text-section-label">Configuration</h3>
+        <!-- Agent identity banner -->
+        <div class="relative px-5 pt-6 pb-5" style="background: var(--surface-raised);">
+          <!-- Top color accent bar -->
+          <div
+            class="absolute inset-x-0 top-0 h-[3px] transition-colors duration-300"
+            :style="{ background: getAgentColor(frontmatter.color) }"
+          />
 
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <UFormField label="Name">
-            <UInput v-model="frontmatter.name" size="sm" />
-          </UFormField>
-          <UFormField label="Model">
-            <USelect
-              v-model="frontmatter.model"
-              size="sm"
-              :items="[
-                { label: 'None', value: undefined },
-                { label: 'Opus', value: 'opus' },
-                { label: 'Sonnet', value: 'sonnet' },
-                { label: 'Haiku', value: 'haiku' },
-              ]"
-            />
-          </UFormField>
-          <UFormField label="Color">
-            <USelect
-              v-model="frontmatter.color"
-              size="sm"
-              :items="[
-                { label: 'None', value: undefined },
-                { label: 'Pink', value: 'pink' },
-                { label: 'Orange', value: 'orange' },
-                { label: 'Blue', value: 'blue' },
-                { label: 'Cyan', value: 'cyan' },
-                { label: 'Green', value: 'green' },
-                { label: 'Purple', value: 'purple' },
-                { label: 'Yellow', value: 'yellow' },
-                { label: 'Red', value: 'red' },
-              ]"
-            />
-          </UFormField>
-          <UFormField label="Memory">
-            <USelect
-              v-model="frontmatter.memory"
-              size="sm"
-              :items="[
-                { label: 'None', value: undefined },
-                { label: 'User', value: 'user' },
-                { label: 'Project', value: 'project' },
-              ]"
-            />
-          </UFormField>
+          <!-- Identity row -->
+          <div class="flex items-start gap-4">
+            <!-- Color indicator -->
+            <div
+              class="size-11 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
+              :style="{ background: getAgentColor(frontmatter.color) + '15', border: '1px solid ' + getAgentColor(frontmatter.color) + '25' }"
+            >
+              <UIcon name="i-lucide-bot" class="size-5 transition-colors duration-300" :style="{ color: getAgentColor(frontmatter.color) }" />
+            </div>
+
+            <div class="flex-1 min-w-0 pt-0.5">
+              <div class="flex items-center gap-2.5 flex-wrap">
+                <span class="font-mono text-[15px] font-semibold tracking-tight truncate" style="color: var(--text-primary);">
+                  {{ frontmatter.name || 'Unnamed Agent' }}
+                </span>
+                <span
+                  v-if="frontmatter.model && modelColors[frontmatter.model]"
+                  class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0"
+                  :class="[modelColors[frontmatter.model].bg, modelColors[frontmatter.model].text]"
+                >
+                  {{ frontmatter.model }}
+                </span>
+                <span
+                  v-if="agent.hasMemory"
+                  class="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0"
+                  style="background: rgba(74, 222, 128, 0.1); color: #4ade80;"
+                >
+                  <UIcon name="i-lucide-brain" class="size-3" />
+                  memory
+                </span>
+              </div>
+              <p class="text-[12px] mt-1 leading-relaxed" style="color: var(--text-tertiary);">
+                {{ frontmatter.description || 'No description yet' }}
+              </p>
+            </div>
+          </div>
         </div>
 
-        <UFormField label="Description">
-          <UTextarea v-model="frontmatter.description" :rows="2" size="sm" />
-        </UFormField>
+        <!-- Form fields -->
+        <div class="px-5 py-4 space-y-4" style="background: var(--surface-base); border-top: 1px solid var(--border-subtle);">
+          <h3 class="text-section-label">Configuration</h3>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="field-group">
+              <label class="field-label">Name</label>
+              <input v-model="frontmatter.name" class="field-input" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Model</label>
+              <div class="pill-picker">
+                <button
+                  type="button"
+                  class="pill-picker__option"
+                  :class="{ 'pill-picker__option--active': !frontmatter.model }"
+                  @click="frontmatter.model = undefined"
+                >none</button>
+                <button
+                  type="button"
+                  class="pill-picker__option pill-picker__option--opus"
+                  :class="{ 'pill-picker__option--active': frontmatter.model === 'opus' }"
+                  @click="frontmatter.model = 'opus'"
+                >opus</button>
+                <button
+                  type="button"
+                  class="pill-picker__option pill-picker__option--sonnet"
+                  :class="{ 'pill-picker__option--active': frontmatter.model === 'sonnet' }"
+                  @click="frontmatter.model = 'sonnet'"
+                >sonnet</button>
+                <button
+                  type="button"
+                  class="pill-picker__option pill-picker__option--haiku"
+                  :class="{ 'pill-picker__option--active': frontmatter.model === 'haiku' }"
+                  @click="frontmatter.model = 'haiku'"
+                >haiku</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Color</label>
+              <div class="color-picker">
+                <button
+                  type="button"
+                  class="color-picker__swatch"
+                  :class="{ 'color-picker__swatch--active': !frontmatter.color }"
+                  :style="{ background: '#71717a', '--swatch-glow': 'rgba(113, 113, 122, 0.3)' }"
+                  title="None"
+                  @click="frontmatter.color = undefined"
+                />
+                <button
+                  v-for="c in colorOptions"
+                  :key="c.value"
+                  type="button"
+                  class="color-picker__swatch"
+                  :class="{ 'color-picker__swatch--active': frontmatter.color === c.value }"
+                  :style="{ background: c.hex, '--swatch-glow': c.hex + '40' }"
+                  :title="c.value"
+                  @click="frontmatter.color = c.value"
+                />
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Memory</label>
+              <div class="pill-picker">
+                <button
+                  type="button"
+                  class="pill-picker__option"
+                  :class="{ 'pill-picker__option--active': !frontmatter.memory }"
+                  @click="frontmatter.memory = undefined"
+                >none</button>
+                <button
+                  type="button"
+                  class="pill-picker__option"
+                  :class="{ 'pill-picker__option--active': frontmatter.memory === 'user' }"
+                  @click="frontmatter.memory = 'user'"
+                >user</button>
+                <button
+                  type="button"
+                  class="pill-picker__option"
+                  :class="{ 'pill-picker__option--active': frontmatter.memory === 'project' }"
+                  @click="frontmatter.memory = 'project'"
+                >project</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Description</label>
+            <textarea v-model="frontmatter.description" rows="2" class="field-textarea" />
+          </div>
+        </div>
       </div>
 
       <!-- System Prompt Editor -->
@@ -178,8 +266,8 @@ const lineCount = computed(() => body.value.split('\n').length)
         </div>
         <textarea
           v-model="body"
-          class="w-full resize-none font-mono text-[13px] leading-relaxed p-4 focus:outline-none"
-          style="background: var(--surface-base); color: var(--text-primary); min-height: 500px;"
+          class="editor-textarea"
+          style="min-height: 500px;"
           spellcheck="false"
           placeholder="Agent system prompt..."
         />
