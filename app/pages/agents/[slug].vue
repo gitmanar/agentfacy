@@ -87,8 +87,8 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
   <div>
     <PageHeader :title="agent?.frontmatter.name || slug">
       <template #leading>
-        <NuxtLink to="/agents" class="focus-ring rounded">
-          <UIcon name="i-lucide-arrow-left" class="size-4" style="color: var(--text-tertiary);" />
+        <NuxtLink to="/agents" class="focus-ring rounded p-1.5 -m-1.5" aria-label="Back to agents">
+          <UIcon name="i-lucide-arrow-left" class="size-4 text-label" />
         </NuxtLink>
       </template>
       <template #trailing>
@@ -100,32 +100,24 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
       </template>
       <template #right>
         <button
-          class="text-[12px] px-2 py-1 rounded focus-ring"
-          style="color: var(--text-tertiary);"
+          class="text-[12px] px-2 py-1 rounded focus-ring text-label"
           @click="showDeleteConfirm = true"
         >
           Delete
         </button>
-        <span v-if="isDirty" class="text-[10px] font-mono" style="color: var(--warning);">unsaved</span>
+        <span v-if="isDirty" class="text-[10px] font-mono unsaved-pulse" style="color: var(--warning);">unsaved</span>
         <UButton label="Save" icon="i-lucide-save" size="sm" :loading="saving" @click="save" />
       </template>
     </PageHeader>
 
-    <!-- Breadcrumb -->
-    <div class="px-6 pt-3 pb-1">
-      <span class="text-[11px]" style="color: var(--text-disabled);">
-        Agents &rsaquo; {{ agent?.frontmatter.name || slug }}
-      </span>
-    </div>
-
-    <div v-if="agent" class="px-6 py-4 space-y-6">
+    <div v-if="agent" class="px-6 py-5 space-y-6">
       <!-- Configuration -->
       <div
         class="rounded-xl overflow-hidden"
         style="border: 1px solid var(--border-subtle);"
       >
         <!-- Agent identity banner -->
-        <div class="relative px-5 pt-6 pb-5" style="background: var(--surface-raised);">
+        <div class="relative px-5 pt-6 pb-5" style="background: var(--surface-raised)">
           <!-- Top color accent bar -->
           <div
             class="absolute inset-x-0 top-0 h-[3px] transition-colors duration-300"
@@ -144,7 +136,7 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
 
             <div class="flex-1 min-w-0 pt-0.5">
               <div class="flex items-center gap-2.5 flex-wrap">
-                <span class="font-mono text-[15px] font-semibold tracking-tight truncate" style="color: var(--text-primary);">
+                <span class="text-[15px] font-semibold tracking-tight truncate">
                   {{ frontmatter.name || 'Unnamed Agent' }}
                 </span>
                 <span
@@ -154,25 +146,9 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
                 >
                   {{ frontmatter.model }}
                 </span>
-                <span
-                  v-if="agent.hasMemory"
-                  class="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0"
-                  style="background: rgba(74, 222, 128, 0.1); color: #4ade80;"
-                >
-                  <UIcon name="i-lucide-brain" class="size-3" />
-                  memory
-                </span>
-                <span
-                  v-if="agentSkills.length"
-                  class="flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0"
-                  style="background: var(--accent-muted); color: var(--accent);"
-                >
-                  <UIcon name="i-lucide-sparkles" class="size-3" />
-                  {{ agentSkills.length }} skill{{ agentSkills.length === 1 ? '' : 's' }}
-                </span>
               </div>
-              <p class="text-[12px] mt-1 leading-relaxed" style="color: var(--text-tertiary);">
-                {{ frontmatter.description || 'No description yet' }}
+              <p v-if="frontmatter.description" class="text-[12px] mt-1 leading-relaxed text-label">
+                {{ frontmatter.description }}
               </p>
             </div>
           </div>
@@ -247,20 +223,24 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
                   class="pill-picker__option"
                   :class="{ 'pill-picker__option--active': !frontmatter.memory }"
                   @click="frontmatter.memory = undefined"
-                >none</button>
+                  title="Agent does not remember between conversations"
+                >no memory</button>
                 <button
                   type="button"
                   class="pill-picker__option"
                   :class="{ 'pill-picker__option--active': frontmatter.memory === 'user' }"
                   @click="frontmatter.memory = 'user'"
-                >user</button>
+                  title="Agent remembers preferences for each individual user"
+                >per person</button>
                 <button
                   type="button"
                   class="pill-picker__option"
                   :class="{ 'pill-picker__option--active': frontmatter.memory === 'project' }"
                   @click="frontmatter.memory = 'project'"
-                >project</button>
+                  title="Agent remembers context specific to this project"
+                >per project</button>
               </div>
+              <span class="field-hint">Should this agent remember things between conversations?</span>
             </div>
           </div>
 
@@ -282,7 +262,7 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
             <UIcon name="i-lucide-sparkles" class="size-3.5" style="color: var(--accent);" />
             Skills
           </h3>
-          <span class="font-mono text-[10px]" style="color: var(--text-disabled);">{{ agentSkills.length }}</span>
+          <span class="font-mono text-[10px] text-meta">{{ agentSkills.length }}</span>
         </div>
 
         <div class="divide-y" style="divide-color: var(--border-subtle);">
@@ -290,67 +270,57 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
             v-for="skill in agentSkills"
             :key="skill.slug + skill.source"
             :to="skill.source === 'standalone' ? `/skills/${skill.slug}` : `/plugins/${encodeURIComponent(skill.pluginId!)}`"
-            class="flex items-center gap-3 px-4 py-2.5 transition-colors group"
-            @mouseenter="($event.currentTarget as HTMLElement).style.background = 'var(--surface-raised)'"
-            @mouseleave="($event.currentTarget as HTMLElement).style.background = 'transparent'"
+            class="flex items-center gap-3 px-4 py-2.5 group hover-bg"
           >
             <UIcon name="i-lucide-sparkles" class="size-3.5 shrink-0" style="color: var(--accent);" />
 
-            <span class="font-mono text-[13px] font-medium w-40 shrink-0 truncate" style="color: var(--text-primary);">
+            <span class="font-mono text-[13px] font-medium w-40 shrink-0 truncate">
               {{ skill.frontmatter.name }}
             </span>
 
             <!-- Context badge -->
             <span
               v-if="skill.frontmatter.context"
-              class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0"
-              style="background: rgba(255,255,255,0.06); color: var(--text-disabled);"
+              class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0 badge badge-subtle"
             >
               {{ skill.frontmatter.context }}
             </span>
 
             <!-- Source badge -->
             <span
-              class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0"
-              :style="{
-                background: skill.source === 'plugin' ? 'rgba(99,102,241,0.1)' : 'var(--accent-muted)',
-                color: skill.source === 'plugin' ? 'rgb(129,140,248)' : 'var(--accent)',
-              }"
+              class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0 badge"
+              :class="skill.source === 'plugin' ? 'badge-agent' : 'badge-accent'"
             >
               {{ skill.source === 'plugin' ? skill.pluginName : 'standalone' }}
             </span>
 
             <!-- Description -->
-            <span class="flex-1 text-[12px] truncate" style="color: var(--text-tertiary);">
+            <span class="flex-1 text-[12px] truncate text-label">
               {{ skill.frontmatter.description }}
             </span>
 
             <div class="flex items-center gap-2 shrink-0">
-              <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
-                {{ Math.round(skill.body.length / 100) / 10 }}k
-              </span>
               <UIcon
                 name="i-lucide-chevron-right"
-                class="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                style="color: var(--text-disabled);"
+                class="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-meta"
               />
             </div>
           </NuxtLink>
         </div>
       </div>
 
-      <!-- System Prompt Editor -->
+      <!-- Instructions Editor -->
       <div
         class="rounded-xl overflow-hidden"
         style="border: 1px solid var(--border-subtle);"
       >
         <div class="flex items-center justify-between px-4 py-2.5" style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);">
-          <h3 class="text-section-label">System Prompt</h3>
+          <h3 class="text-section-label">Instructions</h3>
           <div class="flex items-center gap-3">
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+            <span class="font-mono text-[10px] text-meta">
               {{ lineCount }} lines
             </span>
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+            <span class="font-mono text-[10px] text-meta">
               {{ charCount.toLocaleString() }} chars
             </span>
           </div>
@@ -360,31 +330,33 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
           class="editor-textarea"
           style="min-height: 500px;"
           spellcheck="false"
-          placeholder="Agent system prompt..."
+          placeholder="Tell this agent how it should behave..."
         />
       </div>
 
-      <!-- File info -->
-      <div class="flex items-center gap-3 font-mono text-[10px]" style="color: var(--text-disabled);">
-        <span>{{ agent.filePath }}</span>
-        <span v-if="agent.hasMemory" class="flex items-center gap-1">
-          <UIcon name="i-lucide-brain" class="size-3" />
-          memory
-        </span>
-      </div>
+      <!-- File location (collapsed by default) -->
+      <details class="group">
+        <summary class="text-[10px] cursor-pointer list-none flex items-center gap-1.5 text-meta">
+          <UIcon name="i-lucide-file" class="size-3" />
+          Show file location
+        </summary>
+        <div class="mt-1 font-mono text-[10px] pl-4.5 text-meta">
+          {{ agent.filePath }}
+        </div>
+      </details>
     </div>
 
     <div v-else class="flex justify-center py-16">
-      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" style="color: var(--text-disabled);" />
+      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-meta" />
     </div>
 
     <!-- Delete confirmation -->
     <UModal v-model:open="showDeleteConfirm">
       <template #content>
-        <div class="p-6 space-y-4" style="background: var(--surface-overlay);">
+        <div class="p-6 space-y-4 bg-overlay">
           <h3 class="text-page-title">Delete Agent</h3>
-          <p class="text-[13px]" style="color: var(--text-secondary);">
-            Delete <strong class="font-mono">{{ agent?.frontmatter.name }}</strong>? This removes the file from disk.
+          <p class="text-[13px] text-body">
+            Permanently delete <strong>{{ agent?.frontmatter.name }}</strong>? This action cannot be undone.
           </p>
           <div class="flex justify-end gap-2">
             <UButton label="Cancel" variant="ghost" color="neutral" size="sm" @click="showDeleteConfirm = false" />

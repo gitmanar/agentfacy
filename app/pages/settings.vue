@@ -96,12 +96,20 @@ const newHookCommand = ref('')
 const newHookMatcher = ref('')
 
 const hookEventOptions = [
-  'PreToolUse',
-  'PostToolUse',
-  'Notification',
-  'Stop',
-  'SubagentStop',
+  { value: 'PreToolUse', label: 'Before Claude uses a tool' },
+  { value: 'PostToolUse', label: 'After Claude uses a tool' },
+  { value: 'Notification', label: 'When a notification is sent' },
+  { value: 'Stop', label: 'When Claude finishes' },
+  { value: 'SubagentStop', label: 'When a sub-agent finishes' },
 ]
+
+const hookEventLabels: Record<string, string> = {
+  PreToolUse: 'Before Claude uses a tool',
+  PostToolUse: 'After Claude uses a tool',
+  Notification: 'When a notification is sent',
+  Stop: 'When Claude finishes',
+  SubagentStop: 'When a sub-agent finishes',
+}
 
 async function addHook() {
   if (!newHookEvent.value || !newHookCommand.value) return
@@ -182,8 +190,8 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
     <PageHeader title="Settings">
       <template #right>
         <button
-          class="text-[12px] font-mono px-2 py-1 rounded focus-ring"
-          style="color: var(--text-tertiary); background: var(--surface-raised); border: 1px solid var(--border-default);"
+          class="text-[12px] px-2 py-1 rounded focus-ring text-label"
+          style="background: var(--surface-raised); border: 1px solid var(--border-default);"
           @click="viewMode = viewMode === 'structured' ? 'raw' : 'structured'"
         >
           {{ viewMode === 'structured' ? 'Raw JSON' : 'Structured' }}
@@ -193,7 +201,7 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
     </PageHeader>
 
     <div v-if="loading" class="flex justify-center py-16">
-      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" style="color: var(--text-disabled);" />
+      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-meta" />
     </div>
 
     <!-- Structured view -->
@@ -201,8 +209,7 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
 
       <!-- General -->
       <div
-        class="rounded-xl p-5 space-y-4"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+        class="rounded-xl p-5 space-y-4 bg-card"
       >
         <h3 class="text-section-label">General</h3>
 
@@ -210,9 +217,9 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
           <!-- Always Thinking toggle -->
           <div class="flex items-center justify-between">
             <div>
-              <div class="text-[13px] font-medium" style="color: var(--text-primary);">Always Thinking</div>
-              <div class="text-[11px] mt-0.5" style="color: var(--text-tertiary);">
-                Enable extended thinking for all conversations
+              <div class="text-[13px] font-medium">Always Thinking</div>
+              <div class="text-[12px] mt-0.5 text-label">
+                When enabled, Claude takes more time to reason through complex problems before responding. Better answers, but slower and uses more resources.
               </div>
             </div>
             <label class="field-toggle">
@@ -231,10 +238,12 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
 
       <!-- Status Line -->
       <div
-        class="rounded-xl p-5 space-y-4"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+        class="rounded-xl p-5 space-y-4 bg-card"
       >
         <h3 class="text-section-label">Status Line</h3>
+        <p class="text-[12px] text-meta">
+          Shows custom information in Claude Code's interface. Use a bash command to display dynamic content.
+        </p>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="field-group">
@@ -257,11 +266,10 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
 
       <!-- Plugins -->
       <div
-        class="rounded-xl p-5 space-y-4"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+        class="rounded-xl p-5 space-y-4 bg-card"
       >
         <h3 class="text-section-label">Enabled Plugins</h3>
-        <div v-if="plugins.length === 0" class="text-[13px]" style="color: var(--text-tertiary);">
+        <div v-if="plugins.length === 0" class="text-[13px] text-label">
           No plugins configured.
         </div>
         <div v-else class="space-y-2">
@@ -269,9 +277,9 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
             v-for="plugin in plugins"
             :key="plugin.name"
             class="flex items-center justify-between py-2 px-3 rounded-lg"
-            style="background: rgba(255,255,255,0.02);"
+            style="background: var(--input-bg);"
           >
-            <span class="font-mono text-[12px]" style="color: var(--text-secondary);">{{ plugin.name }}</span>
+            <span class="font-mono text-[12px] text-body">{{ plugin.name }}</span>
             <div class="flex items-center gap-3">
               <label class="field-toggle">
                 <input
@@ -284,12 +292,11 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
                 </span>
               </label>
               <button
-                class="text-[10px] px-1.5 py-0.5 rounded focus-ring"
-                style="color: var(--text-disabled);"
-                title="Remove plugin from settings"
+                class="p-1.5 -m-0.5 rounded focus-ring text-meta"
+                aria-label="Remove plugin from settings"
                 @click="removePlugin(plugin.name)"
               >
-                <UIcon name="i-lucide-x" class="size-3" />
+                <UIcon name="i-lucide-x" class="size-3.5" />
               </button>
             </div>
           </div>
@@ -298,50 +305,52 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
 
       <!-- Hooks -->
       <div
-        class="rounded-xl p-5 space-y-4"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+        class="rounded-xl p-5 space-y-4 bg-card"
       >
         <div class="flex items-center justify-between">
-          <h3 class="text-section-label">Hooks</h3>
-          <UButton label="Add Hook" icon="i-lucide-plus" size="xs" variant="soft" @click="showAddHookModal = true" />
+          <h3 class="text-section-label">Automations</h3>
+          <UButton label="Add Automation" icon="i-lucide-plus" size="xs" variant="soft" @click="showAddHookModal = true" />
         </div>
+        <p class="text-[12px] text-meta">
+          Run shell commands automatically when certain events happen in Claude Code.
+        </p>
 
-        <div v-if="hooks.length === 0" class="text-[13px]" style="color: var(--text-tertiary);">
-          No hooks configured.
+        <div v-if="hooks.length === 0" class="text-[13px] text-label">
+          No automations configured.
         </div>
 
         <div v-else class="space-y-3">
           <div v-for="hook in hooks" :key="hook.event">
             <div class="flex items-center gap-2 mb-1.5">
-              <UIcon name="i-lucide-webhook" class="size-3.5" style="color: var(--text-disabled);" />
-              <span class="font-mono text-[12px] font-medium" style="color: var(--text-secondary);">{{ hook.event }}</span>
-              <span class="font-mono text-[10px]" style="color: var(--text-disabled);">{{ hook.commands.length }}</span>
+              <UIcon name="i-lucide-webhook" class="size-3.5 text-meta" />
+              <span class="text-[12px] font-medium text-body">{{ hookEventLabels[hook.event] || hook.event }}</span>
+              <span class="font-mono text-[10px] text-meta">{{ hook.commands.length }}</span>
             </div>
             <div class="ml-5 space-y-1">
               <div
                 v-for="(cmd, idx) in hook.commands"
                 :key="idx"
                 class="flex items-center justify-between py-1.5 px-3 rounded-lg group"
-                style="background: rgba(255,255,255,0.02);"
+                style="background: var(--input-bg);"
               >
                 <div class="flex-1 min-w-0">
-                  <span class="font-mono text-[11px] truncate block" style="color: var(--text-tertiary);">
+                  <span class="font-mono text-[12px] truncate block text-label">
                     {{ typeof cmd === 'string' ? cmd : (cmd as any).command || JSON.stringify(cmd) }}
                   </span>
                   <span
                     v-if="typeof cmd === 'object' && (cmd as any).matcher"
-                    class="font-mono text-[10px] block mt-0.5"
-                    style="color: var(--text-disabled);"
+                    class="font-mono text-[10px] block mt-0.5 text-meta"
                   >
                     matcher: {{ (cmd as any).matcher }}
                   </span>
                 </div>
                 <button
-                  class="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] px-1 py-0.5 rounded focus-ring"
+                  class="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-1.5 -m-0.5 rounded focus-ring"
                   style="color: var(--error);"
+                  aria-label="Delete hook"
                   @click="removeHook(hook.event, idx)"
                 >
-                  <UIcon name="i-lucide-trash-2" class="size-3" />
+                  <UIcon name="i-lucide-trash-2" class="size-3.5" />
                 </button>
               </div>
             </div>
@@ -359,10 +368,10 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
         <div class="flex items-center justify-between px-4 py-2.5" style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);">
           <h3 class="text-section-label">settings.json</h3>
           <div class="flex items-center gap-3">
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+            <span class="font-mono text-[10px] text-meta">
               {{ lineCount }} lines
             </span>
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+            <span class="font-mono text-[10px] text-meta">
               {{ charCount.toLocaleString() }} chars
             </span>
           </div>
@@ -379,27 +388,30 @@ const lineCount = computed(() => rawJson.value.split('\n').length)
     <!-- Add Hook Modal -->
     <UModal v-model:open="showAddHookModal">
       <template #content>
-        <div class="p-6 space-y-4" style="background: var(--surface-overlay);">
-          <h3 class="text-page-title">Add Hook</h3>
+        <div class="p-6 space-y-4 bg-overlay">
+          <h3 class="text-page-title">Add Automation</h3>
+          <p class="text-[12px] leading-relaxed text-label">
+            Run a shell command automatically when a specific event happens.
+          </p>
 
           <div class="field-group">
-            <label class="field-label" data-required>Event</label>
+            <label class="field-label" data-required>When this happens</label>
             <select v-model="newHookEvent" class="field-select">
-              <option value="" disabled>Select event...</option>
-              <option v-for="opt in hookEventOptions" :key="opt" :value="opt">{{ opt }}</option>
+              <option value="" disabled>Select an event...</option>
+              <option v-for="opt in hookEventOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
             </select>
           </div>
 
           <div class="field-group">
-            <label class="field-label" data-required>Command</label>
-            <input v-model="newHookCommand" class="field-input" placeholder="bash -c 'echo hello'" />
-            <span class="field-hint">Shell command to execute</span>
+            <label class="field-label" data-required>Run this command</label>
+            <input v-model="newHookCommand" class="field-input" placeholder="e.g., bash -c 'echo done'" />
+            <span class="field-hint">The shell command that will be executed</span>
           </div>
 
           <div class="field-group">
-            <label class="field-label">Matcher</label>
-            <input v-model="newHookMatcher" class="field-input" placeholder="Tool name or pattern (optional)" />
-            <span class="field-hint">Only trigger for matching tool names</span>
+            <label class="field-label">Only for specific tools</label>
+            <input v-model="newHookMatcher" class="field-input" placeholder="Leave blank for all (optional)" />
+            <span class="field-hint">Only trigger when a specific tool is used (e.g., "Write" or "Bash")</span>
           </div>
 
           <div class="flex justify-end gap-2 pt-2">

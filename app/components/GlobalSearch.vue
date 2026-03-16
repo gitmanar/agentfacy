@@ -108,29 +108,28 @@ if (import.meta.client) {
 <template>
   <UModal v-model:open="open">
     <template #content>
-      <div style="background: var(--surface-overlay); min-height: 120px; max-height: 420px;" class="rounded-xl overflow-hidden flex flex-col">
+      <div style="min-height: 120px; max-height: 420px;" class="bg-overlay rounded-xl overflow-hidden flex flex-col">
         <!-- Search input -->
         <div class="flex items-center gap-3 px-4 py-3" style="border-bottom: 1px solid var(--border-subtle);">
-          <UIcon name="i-lucide-search" class="size-4 shrink-0" style="color: var(--text-disabled);" />
+          <UIcon name="i-lucide-search" class="size-4 shrink-0 text-meta" />
           <input
             v-model="query"
-            class="flex-1 bg-transparent text-[14px] outline-none"
-            style="color: var(--text-primary);"
+            class="flex-1 bg-transparent text-[13px] outline-none"
             placeholder="Search agents, commands, skills, plugins..."
             autofocus
             @keydown="onKeydown"
           />
-          <kbd class="text-[10px] font-mono px-1.5 py-0.5 rounded" style="background: rgba(255,255,255,0.06); color: var(--text-disabled);">ESC</kbd>
+          <kbd class="text-[10px] font-mono px-1.5 py-0.5 rounded badge badge-subtle">ESC</kbd>
         </div>
 
         <!-- Results -->
         <div class="flex-1 overflow-auto py-1">
           <div v-if="query && !results.length" class="flex flex-col items-center justify-center py-8">
-            <p class="text-[13px]" style="color: var(--text-tertiary);">No results found</p>
+            <p class="text-[13px] text-label">No results found</p>
           </div>
 
           <div v-if="!query" class="flex flex-col items-center justify-center py-8">
-            <p class="text-[12px]" style="color: var(--text-disabled);">Type to search across all items</p>
+            <p class="text-[12px] text-meta">Type to search across all items</p>
           </div>
 
           <button
@@ -138,7 +137,7 @@ if (import.meta.client) {
             :key="result.to"
             class="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
             :style="{
-              background: idx === selectedIndex ? 'rgba(255,255,255,0.06)' : 'transparent',
+              background: idx === selectedIndex ? 'var(--surface-hover)' : 'transparent',
             }"
             @mouseenter="selectedIndex = idx"
             @click="navigate(result.to)"
@@ -148,25 +147,25 @@ if (import.meta.client) {
               class="size-2 rounded-full shrink-0"
               :style="{ background: result.color }"
             />
-            <UIcon v-else :name="result.icon" class="size-4 shrink-0" style="color: var(--text-disabled);" />
+            <UIcon v-else :name="result.icon" class="size-4 shrink-0 text-meta" />
 
-            <span class="font-mono text-[13px] font-medium w-40 shrink-0 truncate" style="color: var(--text-primary);">
+            <span class="font-mono text-[13px] font-medium w-40 shrink-0 truncate">
               {{ result.label }}
             </span>
 
             <span
               v-if="result.model && modelColors[result.model]"
-              class="text-[9px] font-mono font-medium px-1 py-px rounded-full shrink-0"
+              class="text-[10px] font-mono font-medium px-1 py-px rounded-full shrink-0"
               :class="[modelColors[result.model].bg, modelColors[result.model].text]"
             >
               {{ result.model }}
             </span>
 
-            <span class="flex-1 text-[12px] truncate" style="color: var(--text-tertiary);">
+            <span class="flex-1 text-[12px] truncate text-label">
               {{ result.sublabel }}
             </span>
 
-            <span class="text-[10px] font-mono shrink-0" style="color: var(--text-disabled);">
+            <span class="text-[10px] font-mono shrink-0 text-meta">
               {{ result.type }}
             </span>
           </button>

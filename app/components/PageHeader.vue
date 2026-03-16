@@ -6,8 +6,8 @@ defineProps<{
 
 <template>
   <div
-    class="h-14 flex items-center gap-3 px-6 shrink-0"
-    style="border-bottom: 1px solid var(--border-subtle);"
+    class="h-14 flex items-center gap-3 px-6 shrink-0 sticky top-0 z-10"
+    style="border-bottom: 1px solid var(--border-subtle); background: var(--surface-base); backdrop-filter: blur(12px);"
   >
     <slot name="leading" />
     <h1 class="text-page-title flex-1 flex items-center gap-2.5">

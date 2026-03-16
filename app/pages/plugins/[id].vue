@@ -100,8 +100,8 @@ if (import.meta.client) {
   <div>
     <PageHeader :title="plugin?.name || id">
       <template #leading>
-        <NuxtLink to="/plugins" class="focus-ring rounded">
-          <UIcon name="i-lucide-arrow-left" class="size-4" style="color: var(--text-tertiary);" />
+        <NuxtLink to="/plugins" class="focus-ring rounded p-1.5 -m-1.5" aria-label="Back to plugins">
+          <UIcon name="i-lucide-arrow-left" class="size-4 text-label" />
         </NuxtLink>
       </template>
       <template #trailing>
@@ -112,8 +112,7 @@ if (import.meta.client) {
       </template>
       <template #right>
         <button
-          class="text-[12px] px-2 py-1 rounded focus-ring"
-          style="color: var(--text-tertiary);"
+          class="text-[12px] px-2 py-1 rounded focus-ring text-label"
           @click="showUninstallConfirm = true"
         >
           Uninstall
@@ -131,18 +130,11 @@ if (import.meta.client) {
       </template>
     </PageHeader>
 
-    <!-- Breadcrumb -->
-    <div class="px-6 pt-3 pb-1">
-      <span class="text-[11px]" style="color: var(--text-disabled);">
-        Plugins &rsaquo; {{ plugin?.name || id }}
-      </span>
-    </div>
-
     <div v-if="loading" class="flex justify-center py-16">
-      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" style="color: var(--text-disabled);" />
+      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-meta" />
     </div>
 
-    <div v-else-if="plugin" class="px-6 py-4 space-y-6">
+    <div v-else-if="plugin" class="px-6 py-5 space-y-6">
       <!-- Plugin info card -->
       <div
         class="rounded-xl overflow-hidden"
@@ -158,34 +150,30 @@ if (import.meta.client) {
           <div class="flex items-start gap-4">
             <div
               class="size-11 rounded-xl flex items-center justify-center shrink-0"
-              style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle);"
+              style="background: var(--badge-subtle-bg); border: 1px solid var(--border-subtle);"
             >
               <UIcon name="i-lucide-puzzle" class="size-5" style="color: var(--accent);" />
             </div>
 
             <div class="flex-1 min-w-0 pt-0.5">
               <div class="flex items-center gap-2.5 flex-wrap">
-                <span class="font-mono text-[15px] font-semibold tracking-tight truncate" style="color: var(--text-primary);">
+                <span class="text-[15px] font-semibold tracking-tight truncate">
                   {{ plugin.name }}
                 </span>
                 <span
-                  class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0"
-                  style="background: rgba(255,255,255,0.06); color: var(--text-disabled);"
+                  class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0 badge badge-subtle"
                 >
                   v{{ plugin.version }}
                 </span>
                 <span
-                  class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0"
-                  :style="{
-                    background: plugin.enabled ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
-                    color: plugin.enabled ? '#4ade80' : 'var(--text-disabled)',
-                  }"
+                  class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0 badge"
+                  :class="plugin.enabled ? 'badge-success' : 'badge-subtle'"
                 >
                   {{ plugin.enabled ? 'enabled' : 'disabled' }}
                 </span>
               </div>
-              <p class="text-[12px] mt-1 leading-relaxed" style="color: var(--text-tertiary);">
-                {{ plugin.description || 'No description' }}
+              <p v-if="plugin.description" class="text-[12px] mt-1 leading-relaxed text-label">
+                {{ plugin.description }}
               </p>
             </div>
           </div>
@@ -194,20 +182,20 @@ if (import.meta.client) {
         <!-- Metadata -->
         <div class="px-5 py-3 flex items-center gap-6 flex-wrap" style="background: var(--surface-base); border-top: 1px solid var(--border-subtle);">
           <div class="flex items-center gap-1.5">
-            <span class="text-[11px]" style="color: var(--text-disabled);">Marketplace</span>
-            <span class="font-mono text-[11px]" style="color: var(--text-secondary);">{{ plugin.marketplace }}</span>
+            <span class="text-[12px] text-meta">Marketplace</span>
+            <span class="font-mono text-[12px] text-body">{{ plugin.marketplace }}</span>
           </div>
           <div v-if="plugin.author" class="flex items-center gap-1.5">
-            <span class="text-[11px]" style="color: var(--text-disabled);">Author</span>
-            <span class="font-mono text-[11px]" style="color: var(--text-secondary);">{{ plugin.author.name }}</span>
+            <span class="text-[12px] text-meta">Author</span>
+            <span class="font-mono text-[12px] text-body">{{ plugin.author.name }}</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[11px]" style="color: var(--text-disabled);">Installed</span>
-            <span class="font-mono text-[11px]" style="color: var(--text-secondary);">{{ formatDate(plugin.installedAt) }}</span>
+            <span class="text-[12px] text-meta">Installed</span>
+            <span class="font-mono text-[12px] text-body">{{ formatDate(plugin.installedAt) }}</span>
           </div>
           <div class="flex items-center gap-1.5">
-            <span class="text-[11px]" style="color: var(--text-disabled);">Skills</span>
-            <span class="font-mono text-[11px]" style="color: var(--text-secondary);">{{ plugin.skillDetails.length }}</span>
+            <span class="text-[12px] text-meta">Skills</span>
+            <span class="font-mono text-[12px] text-body">{{ plugin.skillDetails.length }}</span>
           </div>
         </div>
       </div>
@@ -224,38 +212,33 @@ if (import.meta.client) {
           >
             <!-- Skill header (clickable) -->
             <button
-              class="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors"
-              :style="{ background: editingSkill === skill.slug ? 'var(--surface-raised)' : 'transparent' }"
-              @mouseenter="($event.currentTarget as HTMLElement).style.background = 'var(--surface-raised)'"
-              @mouseleave="editingSkill !== skill.slug && (($event.currentTarget as HTMLElement).style.background = 'transparent')"
+              class="w-full flex items-center gap-3 px-4 py-3 text-left hover-bg"
+              :style="{ background: editingSkill === skill.slug ? 'var(--surface-raised)' : undefined }"
               @click="toggleSkillEditor(skill.slug)"
             >
               <UIcon
                 :name="editingSkill === skill.slug ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-                class="size-3.5 shrink-0"
-                style="color: var(--text-disabled);"
+                class="size-3.5 shrink-0 text-meta"
               />
-              <span class="font-mono text-[13px] font-medium w-40 shrink-0 truncate" style="color: var(--text-primary);">
+              <span class="text-[13px] font-medium w-40 shrink-0 truncate">
                 {{ skill.frontmatter.name }}
               </span>
               <span
                 v-if="skill.frontmatter.context"
-                class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0"
-                style="background: rgba(255,255,255,0.06); color: var(--text-disabled);"
+                class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0 badge badge-subtle"
               >
                 {{ skill.frontmatter.context }}
               </span>
               <span
                 v-if="skill.frontmatter.agent"
-                class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0"
-                style="background: rgba(99,102,241,0.1); color: rgb(129,140,248);"
+                class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0 badge badge-agent"
               >
                 agent: {{ skill.frontmatter.agent }}
               </span>
-              <span class="flex-1 text-[12px] truncate" style="color: var(--text-tertiary);">
+              <span class="flex-1 text-[12px] truncate text-label">
                 {{ skill.frontmatter.description }}
               </span>
-              <span class="font-mono text-[10px] shrink-0" style="color: var(--text-disabled);">
+              <span class="font-mono text-[10px] shrink-0 text-meta">
                 {{ Math.round(skill.body.length / 100) / 10 }}k chars
               </span>
             </button>
@@ -288,12 +271,12 @@ if (import.meta.client) {
               <!-- Body editor -->
               <div style="border-top: 1px solid var(--border-subtle);">
                 <div class="flex items-center justify-between px-4 py-2.5" style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);">
-                  <h4 class="text-section-label">Skill Prompt</h4>
+                  <h4 class="text-section-label">Instructions</h4>
                   <div class="flex items-center gap-3">
-                    <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+                    <span class="font-mono text-[10px] text-meta">
                       {{ skillBodies[skill.slug].split('\n').length }} lines
                     </span>
-                    <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+                    <span class="font-mono text-[10px] text-meta">
                       {{ skillBodies[skill.slug].length.toLocaleString() }} chars
                     </span>
                   </div>
@@ -309,7 +292,7 @@ if (import.meta.client) {
 
               <!-- Save bar -->
               <div class="flex items-center justify-between px-4 py-3" style="background: var(--surface-raised); border-top: 1px solid var(--border-subtle);">
-                <span class="font-mono text-[10px] truncate" style="color: var(--text-disabled);">
+                <span class="font-mono text-[10px] truncate text-meta">
                   {{ skill.filePath }}
                 </span>
                 <UButton label="Save Skill" icon="i-lucide-save" size="sm" :loading="savingSkill" @click="saveSkill(skill.slug)" />
@@ -321,23 +304,29 @@ if (import.meta.client) {
 
       <!-- No skills -->
       <div v-else class="flex flex-col items-center justify-center py-12 space-y-3">
-        <UIcon name="i-lucide-puzzle" class="size-8" style="color: var(--text-disabled);" />
-        <p class="text-[13px]" style="color: var(--text-tertiary);">This plugin has no skills.</p>
+        <UIcon name="i-lucide-puzzle" class="size-8 text-meta" />
+        <p class="text-[13px] text-label">This plugin has no skills.</p>
       </div>
 
-      <!-- File info -->
-      <div class="font-mono text-[10px]" style="color: var(--text-disabled);">
-        {{ plugin.installPath }}
-      </div>
+      <!-- File location (collapsed) -->
+      <details class="group">
+        <summary class="text-[10px] cursor-pointer list-none flex items-center gap-1.5 text-meta">
+          <UIcon name="i-lucide-file" class="size-3" />
+          Show file location
+        </summary>
+        <div class="mt-1 font-mono text-[10px] pl-4.5 text-meta">
+          {{ plugin.installPath }}
+        </div>
+      </details>
     </div>
 
     <!-- Uninstall confirmation -->
     <UModal v-model:open="showUninstallConfirm">
       <template #content>
-        <div class="p-6 space-y-4" style="background: var(--surface-overlay);">
+        <div class="p-6 space-y-4 bg-overlay">
           <h3 class="text-page-title">Uninstall Plugin</h3>
-          <p class="text-[13px]" style="color: var(--text-secondary);">
-            Uninstall <strong class="font-mono">{{ plugin?.name }}</strong>? This removes the plugin registration but keeps the files on disk.
+          <p class="text-[13px] text-body">
+            Uninstall <strong>{{ plugin?.name }}</strong>? The plugin will be removed but its files will remain on your computer.
           </p>
           <div class="flex justify-end gap-2">
             <UButton label="Cancel" variant="ghost" color="neutral" size="sm" @click="showUninstallConfirm = false" />

@@ -26,13 +26,12 @@ async function changeDir() {
   }
 }
 
-const commandGroups = computed(() => {
-  const groups = new Set<string>()
-  for (const cmd of commands.value) {
-    groups.add(cmd.directory || 'root')
-  }
-  return groups.size
-})
+const modelLabels: Record<string, string> = {
+  opus: 'Claude Opus',
+  sonnet: 'Claude Sonnet',
+  haiku: 'Claude Haiku',
+  unset: 'Default',
+}
 
 const modelBreakdown = computed(() => {
   const counts: Record<string, number> = { opus: 0, sonnet: 0, haiku: 0, unset: 0 }
@@ -44,10 +43,8 @@ const modelBreakdown = computed(() => {
   return counts
 })
 
-const totalChars = computed(() =>
-  agents.value.reduce((sum, a) => sum + a.body.length, 0)
-    + commands.value.reduce((sum, c) => sum + c.body.length, 0)
-    + skills.value.reduce((sum, s) => sum + s.body.length, 0)
+const hasContent = computed(() =>
+  agents.value.length > 0 || commands.value.length > 0 || skills.value.length > 0 || plugins.value.length > 0
 )
 </script>
 
@@ -56,102 +53,53 @@ const totalChars = computed(() =>
     <PageHeader title="Dashboard" />
 
     <div class="px-6 py-4 space-y-6">
-      <!-- Directory picker -->
+
+      <!-- System pulse bar -->
       <div
-        class="rounded-xl p-4"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+        class="rounded-xl flex items-stretch divide-x overflow-hidden bg-card"
+        style="divide-color: var(--border-subtle);"
       >
-        <div class="flex items-center gap-3">
-          <UIcon name="i-lucide-folder" class="size-4 shrink-0" style="color: var(--text-disabled);" />
-          <form class="flex-1 flex gap-2" @submit.prevent="changeDir">
-            <input
-              v-model="dirInput"
-              placeholder="~/.claude"
-              class="field-input flex-1"
-            />
-            <UButton type="submit" :loading="settingDir" label="Load" size="sm" variant="soft" />
-          </form>
-        </div>
+        <NuxtLink
+          v-for="item in [
+            { to: '/agents', count: agents.length, label: 'Agents', icon: 'i-lucide-cpu' },
+            { to: '/commands', count: commands.length, label: 'Commands', icon: 'i-lucide-terminal' },
+            { to: '/skills', count: skills.length, label: 'Skills', icon: 'i-lucide-sparkles' },
+            { to: '/plugins', count: plugins.length, label: 'Plugins', icon: 'i-lucide-puzzle' },
+          ]"
+          :key="item.to"
+          :to="item.to"
+          class="flex-1 flex items-center gap-3 px-5 py-4 hover-bg focus-ring"
+        >
+          <UIcon :name="item.icon" class="size-4 shrink-0 text-meta" />
+          <span class="font-mono text-[20px] font-bold tabular-nums">{{ item.count }}</span>
+          <span class="text-[12px] text-meta">{{ item.label }}</span>
+        </NuxtLink>
       </div>
 
-      <!-- Stat bar -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <NuxtLink
-          to="/agents"
-          class="rounded-xl p-4 transition-all duration-150 focus-ring"
-          style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
-          @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'"
-          @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'"
-        >
-          <div class="font-mono text-[24px] font-bold" style="color: var(--text-primary);">{{ agents.length }}</div>
-          <div class="text-[11px] mt-1" style="color: var(--text-disabled);">Agents</div>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/commands"
-          class="rounded-xl p-4 transition-all duration-150 focus-ring"
-          style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
-          @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'"
-          @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'"
-        >
-          <div class="font-mono text-[24px] font-bold" style="color: var(--text-primary);">{{ commands.length }}</div>
-          <div class="text-[11px] mt-1" style="color: var(--text-disabled);">Commands</div>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/skills"
-          class="rounded-xl p-4 transition-all duration-150 focus-ring"
-          style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
-          @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'"
-          @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'"
-        >
-          <div class="font-mono text-[24px] font-bold" style="color: var(--text-primary);">{{ skills.length }}</div>
-          <div class="text-[11px] mt-1" style="color: var(--text-disabled);">Skills</div>
-        </NuxtLink>
-
-        <NuxtLink
-          to="/plugins"
-          class="rounded-xl p-4 transition-all duration-150 focus-ring"
-          style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
-          @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'"
-          @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'"
-        >
-          <div class="font-mono text-[24px] font-bold" style="color: var(--text-primary);">{{ plugins.length }}</div>
-          <div class="text-[11px] mt-1" style="color: var(--text-disabled);">Plugins</div>
-        </NuxtLink>
-
-        <div
-          class="rounded-xl p-4"
-          style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
-        >
-          <div class="font-mono text-[24px] font-bold" style="color: var(--text-primary);">{{ Math.round(totalChars / 1000) }}k</div>
-          <div class="text-[11px] mt-1" style="color: var(--text-disabled);">Total chars</div>
-        </div>
-      </div>
-
-      <!-- Model breakdown -->
+      <!-- Model breakdown (compact bar) -->
       <div
-        class="rounded-xl p-5"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+        v-if="agents.length > 0"
+        class="rounded-xl px-5 py-3 flex items-center gap-5 bg-card"
       >
-        <h3 class="text-section-label mb-3">Model Distribution</h3>
-        <div class="flex items-center gap-4">
-          <div v-for="(count, model) in modelBreakdown" :key="model" class="flex items-center gap-2">
+        <span class="text-section-label shrink-0">Models</span>
+        <div class="flex items-center gap-4 flex-1">
+          <div v-for="(count, model) in modelBreakdown" :key="model" class="flex items-center gap-1.5">
             <span
               v-if="model !== 'unset'"
-              class="text-[10px] font-mono font-medium px-1.5 py-px rounded-full"
+              class="text-[10px] font-medium px-1.5 py-px rounded-full"
               :class="[modelColors[model]?.bg, modelColors[model]?.text]"
             >
-              {{ model }}
+              {{ modelLabels[model] }}
             </span>
-            <span v-else class="text-[10px] font-mono" style="color: var(--text-disabled);">unset</span>
-            <span class="font-mono text-[13px] font-medium" style="color: var(--text-primary);">{{ count }}</span>
+            <span v-else class="text-[10px] text-meta">{{ modelLabels[model] }}</span>
+            <span class="font-mono text-[12px] font-medium tabular-nums">{{ count }}</span>
           </div>
         </div>
+        <span class="text-[10px] text-meta">Opus is the most capable, Haiku is the fastest</span>
       </div>
 
       <!-- Two-column: Agents + Commands -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div v-if="hasContent" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Agents list -->
         <div
           class="rounded-xl overflow-hidden"
@@ -159,27 +107,25 @@ const totalChars = computed(() =>
         >
           <div class="flex items-center justify-between px-4 py-2.5" style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);">
             <h3 class="text-section-label">Agents</h3>
-            <NuxtLink to="/agents" class="text-[11px] focus-ring rounded px-1" style="color: var(--accent);">View all</NuxtLink>
+            <NuxtLink to="/agents" class="text-[12px] focus-ring rounded px-1" style="color: var(--accent);">View all</NuxtLink>
           </div>
           <div class="divide-y" style="divide-color: var(--border-subtle);">
             <NuxtLink
-              v-for="agent in agents.slice(0, 8)"
+              v-for="agent in agents.slice(0, 6)"
               :key="agent.slug"
               :to="`/agents/${agent.slug}`"
-              class="flex items-center gap-2.5 px-4 py-2 transition-colors"
-              @mouseenter="($event.currentTarget as HTMLElement).style.background = 'var(--surface-raised)'"
-              @mouseleave="($event.currentTarget as HTMLElement).style.background = 'transparent'"
+              class="flex items-center gap-2.5 px-4 py-2.5 hover-bg"
             >
               <div
                 class="size-2 rounded-full shrink-0"
                 :style="{ background: getAgentColor(agent.frontmatter.color) }"
               />
-              <span class="font-mono text-[12px] font-medium truncate" style="color: var(--text-primary);">
+              <span class="text-[12px] font-medium truncate">
                 {{ agent.frontmatter.name }}
               </span>
               <span
                 v-if="agent.frontmatter.model && modelColors[agent.frontmatter.model]"
-                class="ml-auto text-[9px] font-mono font-medium px-1 py-px rounded-full shrink-0"
+                class="ml-auto text-[10px] font-mono font-medium px-1 py-px rounded-full shrink-0"
                 :class="[modelColors[agent.frontmatter.model].bg, modelColors[agent.frontmatter.model].text]"
               >
                 {{ agent.frontmatter.model }}
@@ -195,22 +141,20 @@ const totalChars = computed(() =>
         >
           <div class="flex items-center justify-between px-4 py-2.5" style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);">
             <h3 class="text-section-label">Commands</h3>
-            <NuxtLink to="/commands" class="text-[11px] focus-ring rounded px-1" style="color: var(--accent);">View all</NuxtLink>
+            <NuxtLink to="/commands" class="text-[12px] focus-ring rounded px-1" style="color: var(--accent);">View all</NuxtLink>
           </div>
           <div class="divide-y" style="divide-color: var(--border-subtle);">
             <NuxtLink
-              v-for="cmd in commands.slice(0, 8)"
+              v-for="cmd in commands.slice(0, 6)"
               :key="cmd.slug"
               :to="`/commands/${cmd.slug}`"
-              class="flex items-center gap-2.5 px-4 py-2 transition-colors"
-              @mouseenter="($event.currentTarget as HTMLElement).style.background = 'var(--surface-raised)'"
-              @mouseleave="($event.currentTarget as HTMLElement).style.background = 'transparent'"
+              class="flex items-center gap-2.5 px-4 py-2.5 hover-bg"
             >
-              <span class="font-mono text-[9px] shrink-0" style="color: var(--text-disabled);">&gt;_</span>
-              <span class="font-mono text-[12px] truncate" style="color: var(--text-secondary);">
-                /{{ cmd.frontmatter.name }}
+              <span class="font-mono text-[10px] shrink-0 text-meta">/</span>
+              <span class="text-[12px] truncate text-body">
+                {{ cmd.frontmatter.name }}
               </span>
-              <span class="ml-auto font-mono text-[10px] shrink-0" style="color: var(--text-disabled);">
+              <span class="ml-auto text-[10px] shrink-0 text-meta">
                 {{ cmd.directory }}
               </span>
             </NuxtLink>
@@ -218,65 +162,60 @@ const totalChars = computed(() =>
         </div>
       </div>
 
-      <!-- Quick actions for empty state -->
-      <div
-        v-if="agents.length === 0 && commands.length === 0"
-        class="rounded-xl p-6 space-y-4"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
-      >
-        <h3 class="text-section-label">Get Started</h3>
-        <p class="text-[13px] leading-relaxed" style="color: var(--text-tertiary);">
-          Create agents to define specialized AI behaviors, and commands to build reusable workflows. Start by creating your first agent.
-        </p>
-        <div class="flex gap-3">
-          <NuxtLink
-            to="/agents"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors focus-ring"
-            style="background: var(--accent-muted); color: var(--accent); border: 1px solid rgba(45, 212, 191, 0.2);"
-          >
-            <UIcon name="i-lucide-cpu" class="size-4" />
-            Create an Agent
-          </NuxtLink>
-          <NuxtLink
-            to="/commands"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors focus-ring"
-            style="background: rgba(255,255,255,0.04); color: var(--text-secondary); border: 1px solid var(--border-subtle);"
-          >
-            <UIcon name="i-lucide-terminal" class="size-4" />
-            Create a Command
-          </NuxtLink>
-        </div>
-      </div>
+      <!-- Welcome onboarding (first-run) -->
+      <WelcomeOnboarding
+        v-if="!hasContent"
+        @created="(agent) => navigateTo(`/agents/${agent.slug}`)"
+      />
 
       <!-- Graph CTA -->
       <NuxtLink
-        v-if="agents.length > 0 || commands.length > 0"
+        v-if="hasContent"
         to="/graph"
-        class="block rounded-xl p-5 transition-all duration-150 focus-ring"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
-        @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'"
-        @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-subtle)'"
+        class="block rounded-xl p-5 focus-ring hover-card bg-card"
       >
         <div class="flex items-center gap-3">
           <UIcon name="i-lucide-workflow" class="size-5" style="color: var(--accent);" />
           <div class="flex-1">
-            <div class="text-[13px] font-medium" style="color: var(--text-primary);">Relationship Graph</div>
-            <div class="text-[11px]" style="color: var(--text-tertiary);">
-              Visualize how agents and commands connect to each other
+            <div class="text-[13px] font-medium">Relationship Graph</div>
+            <div class="text-[12px] text-label">
+              See how your agents, commands, and skills connect to each other
             </div>
           </div>
-          <UIcon name="i-lucide-arrow-right" class="size-4" style="color: var(--text-disabled);" />
+          <UIcon name="i-lucide-arrow-right" class="size-4 text-meta" />
         </div>
       </NuxtLink>
 
-      <!-- Keyboard shortcuts hint -->
-      <div class="flex items-center gap-4 px-2" style="color: var(--text-disabled);">
-        <span class="text-[11px] flex items-center gap-1.5">
-          <kbd class="text-[10px] font-mono px-1 py-px rounded" style="background: rgba(255,255,255,0.06);">⌘K</kbd>
+      <!-- Advanced: directory picker -->
+      <details>
+        <summary class="text-[12px] flex items-center gap-1.5 text-meta">
+          <UIcon name="i-lucide-settings" class="size-3" />
+          Advanced: Configuration folder
+        </summary>
+        <div
+          class="rounded-xl p-4 mt-2 bg-card"
+        >
+          <p class="text-[12px] mb-3 text-label">
+            This is where Claude Code stores your agents, commands, and settings. The default is ~/.claude.
+          </p>
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-folder" class="size-4 shrink-0 text-meta" />
+            <form class="flex-1 flex gap-2" @submit.prevent="changeDir">
+              <input v-model="dirInput" placeholder="~/.claude" class="field-input flex-1" />
+              <UButton type="submit" :loading="settingDir" label="Load" size="sm" variant="soft" />
+            </form>
+          </div>
+        </div>
+      </details>
+
+      <!-- Keyboard shortcuts -->
+      <div class="flex items-center gap-4 px-2 text-meta">
+        <span class="text-[12px] flex items-center gap-1.5">
+          <kbd class="text-[10px] font-mono px-1 py-px rounded badge-subtle">&#x2318;K</kbd>
           Search
         </span>
-        <span class="text-[11px] flex items-center gap-1.5">
-          <kbd class="text-[10px] font-mono px-1 py-px rounded" style="background: rgba(255,255,255,0.06);">⌘S</kbd>
+        <span class="text-[12px] flex items-center gap-1.5">
+          <kbd class="text-[10px] font-mono px-1 py-px rounded badge-subtle">&#x2318;S</kbd>
           Save
         </span>
       </div>

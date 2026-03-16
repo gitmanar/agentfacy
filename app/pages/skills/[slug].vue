@@ -96,8 +96,8 @@ const agentOptions = computed(() =>
   <div>
     <PageHeader :title="skill?.frontmatter.name || slug">
       <template #leading>
-        <NuxtLink to="/skills" class="focus-ring rounded">
-          <UIcon name="i-lucide-arrow-left" class="size-4" style="color: var(--text-tertiary);" />
+        <NuxtLink to="/skills" class="focus-ring rounded p-1.5 -m-1.5" aria-label="Back to skills">
+          <UIcon name="i-lucide-arrow-left" class="size-4 text-label" />
         </NuxtLink>
       </template>
       <template #trailing>
@@ -105,25 +105,17 @@ const agentOptions = computed(() =>
       </template>
       <template #right>
         <button
-          class="text-[12px] px-2 py-1 rounded focus-ring"
-          style="color: var(--text-tertiary);"
+          class="text-[12px] px-2 py-1 rounded focus-ring text-label"
           @click="showDeleteConfirm = true"
         >
           Delete
         </button>
-        <span v-if="isDirty" class="text-[10px] font-mono" style="color: var(--warning);">unsaved</span>
+        <span v-if="isDirty" class="text-[10px] font-mono unsaved-pulse" style="color: var(--warning);">unsaved</span>
         <UButton label="Save" icon="i-lucide-save" size="sm" :loading="saving" @click="save" />
       </template>
     </PageHeader>
 
-    <!-- Breadcrumb -->
-    <div class="px-6 pt-3 pb-1">
-      <span class="text-[11px]" style="color: var(--text-disabled);">
-        Skills &rsaquo; {{ skill?.frontmatter.name || slug }}
-      </span>
-    </div>
-
-    <div v-if="skill" class="px-6 py-4 space-y-6">
+    <div v-if="skill" class="px-6 py-5 space-y-6">
       <!-- Configuration -->
       <div
         class="rounded-xl overflow-hidden"
@@ -148,26 +140,18 @@ const agentOptions = computed(() =>
 
             <div class="flex-1 min-w-0 pt-0.5">
               <div class="flex items-center gap-2.5 flex-wrap">
-                <span class="font-mono text-[15px] font-semibold tracking-tight truncate" style="color: var(--text-primary);">
+                <span class="text-[15px] font-semibold tracking-tight truncate">
                   {{ frontmatter.name || 'Unnamed Skill' }}
                 </span>
                 <span
                   v-if="frontmatter.context"
-                  class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0"
-                  style="background: rgba(255,255,255,0.06); color: var(--text-disabled);"
+                  class="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 badge badge-subtle"
                 >
                   {{ frontmatter.context }}
                 </span>
-                <span
-                  v-if="frontmatter.agent"
-                  class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full shrink-0"
-                  style="background: rgba(99,102,241,0.1); color: rgb(129,140,248);"
-                >
-                  agent: {{ frontmatter.agent }}
-                </span>
               </div>
-              <p class="text-[12px] mt-1 leading-relaxed" style="color: var(--text-tertiary);">
-                {{ frontmatter.description || 'No description yet' }}
+              <p v-if="frontmatter.description" class="text-[12px] mt-1 leading-relaxed text-label">
+                {{ frontmatter.description }}
               </p>
             </div>
           </div>
@@ -183,8 +167,9 @@ const agentOptions = computed(() =>
               <input v-model="frontmatter.name" class="field-input" />
             </div>
             <div class="field-group">
-              <label class="field-label">Context</label>
-              <input v-model="frontmatter.context" class="field-input" placeholder="e.g. fork, worktree" />
+              <label class="field-label">Availability</label>
+              <input v-model="frontmatter.context" class="field-input" placeholder="Leave blank for always available" />
+              <span class="field-hint">Optionally restrict when this skill appears</span>
             </div>
             <div class="field-group">
               <label class="field-label">Agent</label>
@@ -213,12 +198,12 @@ const agentOptions = computed(() =>
         style="border: 1px solid var(--border-subtle);"
       >
         <div class="flex items-center justify-between px-4 py-2.5" style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);">
-          <h3 class="text-section-label">Skill Prompt</h3>
+          <h3 class="text-section-label">Instructions</h3>
           <div class="flex items-center gap-3">
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+            <span class="font-mono text-[10px] text-meta">
               {{ lineCount }} lines
             </span>
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+            <span class="font-mono text-[10px] text-meta">
               {{ charCount.toLocaleString() }} chars
             </span>
           </div>
@@ -232,23 +217,29 @@ const agentOptions = computed(() =>
         />
       </div>
 
-      <!-- File info -->
-      <div class="font-mono text-[10px]" style="color: var(--text-disabled);">
-        {{ skill.filePath }}
-      </div>
+      <!-- File location (collapsed) -->
+      <details class="group">
+        <summary class="text-[10px] cursor-pointer list-none flex items-center gap-1.5 text-meta">
+          <UIcon name="i-lucide-file" class="size-3" />
+          Show file location
+        </summary>
+        <div class="mt-1 font-mono text-[10px] pl-4.5 text-meta">
+          {{ skill.filePath }}
+        </div>
+      </details>
     </div>
 
     <div v-else class="flex justify-center py-16">
-      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" style="color: var(--text-disabled);" />
+      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-meta" />
     </div>
 
     <!-- Delete confirmation -->
     <UModal v-model:open="showDeleteConfirm">
       <template #content>
-        <div class="p-6 space-y-4" style="background: var(--surface-overlay);">
+        <div class="p-6 space-y-4 bg-overlay">
           <h3 class="text-page-title">Delete Skill</h3>
-          <p class="text-[13px]" style="color: var(--text-secondary);">
-            Delete <strong class="font-mono">{{ skill?.frontmatter.name }}</strong>? This removes the skill directory from disk.
+          <p class="text-[13px] text-label">
+            Permanently delete <strong>{{ skill?.frontmatter.name }}</strong>? This action cannot be undone.
           </p>
           <div class="flex justify-end gap-2">
             <UButton label="Cancel" variant="ghost" color="neutral" size="sm" @click="showDeleteConfirm = false" />

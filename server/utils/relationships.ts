@@ -1,11 +1,20 @@
 import type { Relationship } from '~/types'
 
+interface PluginEntry {
+  id: string
+  name: string
+  skills: string[]
+}
+
 export function extractRelationships(
   agents: { slug: string; body: string }[],
-  commands: { slug: string; body: string; frontmatter: Record<string, unknown> }[]
+  commands: { slug: string; body: string; frontmatter: Record<string, unknown> }[],
+  skills: { slug: string; body: string; frontmatter: Record<string, unknown> }[] = [],
+  plugins: PluginEntry[] = [],
 ): Relationship[] {
   const relationships: Relationship[] = []
   const agentNames = new Set(agents.map(a => a.slug))
+  const skillSlugs = new Set(skills.map(s => s.slug))
   const seen = new Set<string>()
 
   function add(rel: Relationship) {
@@ -95,6 +104,53 @@ export function extractRelationships(
           targetSlug: matchingCmd.slug,
           type: 'spawned-by',
           evidence: m[0],
+        })
+      }
+    }
+  }
+
+  // Skills: check frontmatter.agent reference to link skill -> agent
+  for (const skill of skills) {
+    const agentRef = skill.frontmatter.agent as string | undefined
+    if (agentRef && agentNames.has(agentRef)) {
+      add({
+        sourceType: 'skill',
+        sourceSlug: skill.slug,
+        targetType: 'agent',
+        targetSlug: agentRef,
+        type: 'agent-frontmatter',
+        evidence: `agent: ${agentRef}`,
+      })
+    }
+
+    // Scan skill body for agent references
+    for (const agentSlug of agentNames) {
+      if (agentSlug.length < 4) continue
+      const regex = new RegExp(`\\b${agentSlug.replace(/-/g, '[\\s-]')}\\b`, 'gi')
+      if (regex.test(skill.body)) {
+        add({
+          sourceType: 'skill',
+          sourceSlug: skill.slug,
+          targetType: 'agent',
+          targetSlug: agentSlug,
+          type: 'spawns',
+          evidence: `mentions "${agentSlug}"`,
+        })
+      }
+    }
+  }
+
+  // Plugins: link plugin -> its skills
+  for (const plugin of plugins) {
+    for (const skillName of plugin.skills) {
+      if (skillSlugs.has(skillName)) {
+        add({
+          sourceType: 'plugin',
+          sourceSlug: plugin.id,
+          targetType: 'skill',
+          targetSlug: skillName,
+          type: 'spawns',
+          evidence: `provides skill "${skillName}"`,
         })
       }
     }

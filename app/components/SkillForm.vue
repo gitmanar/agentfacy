@@ -30,7 +30,7 @@ const errors = computed(() => {
   const e: Record<string, string> = {}
   if (!frontmatter.value.name.trim()) e.name = 'Name is required'
   else if (!/^[a-z0-9][a-z0-9-]*$/.test(frontmatter.value.name.trim()))
-    e.name = 'Use lowercase letters, numbers, and hyphens only'
+    e.name = 'Names can only contain lowercase letters, numbers, and hyphens (e.g., code-review)'
   if (!frontmatter.value.description.trim()) e.description = 'Description is required'
   return e
 })
@@ -74,8 +74,11 @@ async function save() {
 </script>
 
 <template>
-  <div class="p-6 space-y-4" style="background: var(--surface-overlay);">
+  <div class="p-6 space-y-4 bg-overlay">
     <h3 class="text-page-title">{{ mode === 'edit' ? 'Edit Skill' : 'New Skill' }}</h3>
+    <p class="text-[12px] leading-relaxed text-label">
+      Skills are specific capabilities that can be added to agents. Define what this skill does and when it should be used.
+    </p>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="field-group">
@@ -84,16 +87,16 @@ async function save() {
           v-model="frontmatter.name"
           class="field-input"
           :class="{ 'field-input--error': fieldError('name') }"
-          placeholder="my-skill"
+          placeholder="code-review"
         />
         <span v-if="fieldError('name')" class="field-error">{{ fieldError('name') }}</span>
-        <span v-else class="field-hint">Skill identifier (used as directory name)</span>
+        <span v-else class="field-hint">Used as an identifier (e.g., code-review)</span>
       </div>
 
       <div class="field-group">
-        <label class="field-label">Context</label>
-        <input v-model="frontmatter.context" class="field-input" placeholder="e.g. fork, worktree" />
-        <span class="field-hint">Execution context for this skill</span>
+        <label class="field-label">Availability</label>
+        <input v-model="frontmatter.context" class="field-input" placeholder="Leave blank for always available" />
+        <span class="field-hint">Optionally restrict when this skill appears. Leave blank to make it always available.</span>
       </div>
     </div>
 
@@ -124,7 +127,8 @@ async function save() {
     </div>
 
     <div class="field-group">
-      <label class="field-label">Skill Prompt</label>
+      <label class="field-label">Instructions</label>
+      <span class="field-hint">Write detailed instructions for what Claude should do when this skill is used.</span>
       <textarea
         v-model="body"
         class="editor-textarea editor-textarea--standalone"

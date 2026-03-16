@@ -31,7 +31,7 @@ const errors = computed(() => {
   const e: Record<string, string> = {}
   if (!frontmatter.value.name.trim()) e.name = 'Name is required'
   else if (!/^[a-z0-9][a-z0-9-]*$/.test(frontmatter.value.name.trim()))
-    e.name = 'Use lowercase letters, numbers, and hyphens only'
+    e.name = 'Names can only contain lowercase letters, numbers, and hyphens (e.g., deploy-app)'
   if (!frontmatter.value.description.trim()) e.description = 'Description is required'
   return e
 })
@@ -71,8 +71,11 @@ async function save() {
 </script>
 
 <template>
-  <div class="p-6 space-y-4" style="background: var(--surface-overlay);">
+  <div class="p-6 space-y-4 bg-overlay">
     <h3 class="text-page-title">New Command</h3>
+    <p class="text-[12px] leading-relaxed text-label">
+      Commands are reusable workflows you can trigger with a slash command (e.g., /deploy).
+    </p>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="field-group">
@@ -110,13 +113,13 @@ async function save() {
     </div>
 
     <div class="field-group">
-      <label class="field-label">Allowed Tools</label>
-      <input v-model="allowedToolsStr" class="field-input" placeholder="Read, Write, Bash, Glob, Grep" />
-      <span class="field-hint">Comma-separated list</span>
+      <label class="field-label">Tool Permissions</label>
+      <input v-model="allowedToolsStr" class="field-input" placeholder="Read, Write, Bash" />
+      <span class="field-hint">What Claude can do when running this command. Leave blank to allow all. Options: Read (read files), Write (create/edit files), Bash (run terminal commands)</span>
     </div>
 
     <div class="field-group">
-      <label class="field-label">Command Body</label>
+      <label class="field-label">Instructions</label>
       <textarea
         v-model="body"
         class="editor-textarea editor-textarea--standalone"

@@ -94,44 +94,34 @@ useUnsavedChanges(isDirty)
   <div>
     <PageHeader :title="command?.frontmatter.name || slug">
       <template #leading>
-        <NuxtLink to="/commands" class="focus-ring rounded">
-          <UIcon name="i-lucide-arrow-left" class="size-4" style="color: var(--text-tertiary);" />
+        <NuxtLink to="/commands" class="focus-ring rounded p-1.5 -m-1.5" aria-label="Back to commands">
+          <UIcon name="i-lucide-arrow-left" class="size-4 text-label" />
         </NuxtLink>
       </template>
       <template #trailing>
         <span
           v-if="command"
-          class="font-mono text-[10px] font-medium px-1.5 py-px rounded-full"
-          style="background: rgba(255,255,255,0.06); color: var(--text-disabled);"
+          class="font-mono text-[10px] font-medium px-1.5 py-px rounded-full badge badge-subtle"
         >
           {{ command.directory }}
         </span>
       </template>
       <template #right>
         <button
-          class="text-[12px] px-2 py-1 rounded focus-ring"
-          style="color: var(--text-tertiary);"
+          class="text-[12px] px-2 py-1 rounded focus-ring text-label"
           @click="showDeleteConfirm = true"
         >
           Delete
         </button>
-        <span v-if="isDirty" class="text-[10px] font-mono" style="color: var(--warning);">unsaved</span>
+        <span v-if="isDirty" class="text-[10px] font-mono unsaved-pulse" style="color: var(--warning);">unsaved</span>
         <UButton label="Save" icon="i-lucide-save" size="sm" :loading="saving" @click="save" />
       </template>
     </PageHeader>
 
-    <!-- Breadcrumb -->
-    <div class="px-6 pt-3 pb-1">
-      <span class="text-[11px]" style="color: var(--text-disabled);">
-        Commands &rsaquo; {{ command?.directory }} &rsaquo; {{ command?.frontmatter.name || slug }}
-      </span>
-    </div>
-
-    <div v-if="command" class="px-6 py-4 space-y-6">
+    <div v-if="command" class="px-6 py-5 space-y-6">
       <!-- Configuration -->
       <div
-        class="rounded-xl p-5 space-y-4"
-        style="background: var(--surface-raised); border: 1px solid var(--border-subtle);"
+        class="rounded-xl p-5 space-y-4 bg-card"
       >
         <h3 class="text-section-label">Configuration</h3>
 
@@ -141,8 +131,9 @@ useUnsavedChanges(isDirty)
             <input v-model="frontmatter.name" class="field-input" />
           </div>
           <div class="field-group">
-            <label class="field-label">Argument Hint</label>
-            <input v-model="frontmatter['argument-hint']" class="field-input" placeholder="<phase-number>" />
+            <label class="field-label">Expected Input</label>
+            <input v-model="frontmatter['argument-hint']" class="field-input" placeholder="file name or topic" />
+            <span class="field-hint">What kind of input does this command expect?</span>
           </div>
         </div>
 
@@ -152,9 +143,9 @@ useUnsavedChanges(isDirty)
         </div>
 
         <div class="field-group">
-          <label class="field-label">Allowed Tools</label>
-          <input v-model="allowedToolsStr" class="field-input" placeholder="Read, Write, Bash, Glob, Grep" />
-          <span class="field-hint">Comma-separated list</span>
+          <label class="field-label">Tool Permissions</label>
+          <input v-model="allowedToolsStr" class="field-input" placeholder="Read, Write, Bash" />
+          <span class="field-hint">What Claude can do when running this command. Leave blank to allow all. Options: Read (read files), Write (create/edit files), Bash (run terminal commands)</span>
         </div>
       </div>
 
@@ -164,12 +155,12 @@ useUnsavedChanges(isDirty)
         style="border: 1px solid var(--border-subtle);"
       >
         <div class="flex items-center justify-between px-4 py-2.5" style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);">
-          <h3 class="text-section-label">Command Body</h3>
+          <h3 class="text-section-label">Instructions</h3>
           <div class="flex items-center gap-3">
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+            <span class="font-mono text-[10px] text-meta">
               {{ lineCount }} lines
             </span>
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
+            <span class="font-mono text-[10px] text-meta">
               {{ charCount.toLocaleString() }} chars
             </span>
           </div>
@@ -183,23 +174,29 @@ useUnsavedChanges(isDirty)
         />
       </div>
 
-      <!-- File info -->
-      <div class="flex items-center gap-3 font-mono text-[10px]" style="color: var(--text-disabled);">
-        <span>{{ command.filePath }}</span>
-      </div>
+      <!-- File location (collapsed) -->
+      <details class="group">
+        <summary class="text-[10px] cursor-pointer list-none flex items-center gap-1.5 text-meta">
+          <UIcon name="i-lucide-file" class="size-3" />
+          Show file location
+        </summary>
+        <div class="mt-1 font-mono text-[10px] pl-4.5 text-meta">
+          {{ command.filePath }}
+        </div>
+      </details>
     </div>
 
     <div v-else class="flex justify-center py-16">
-      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" style="color: var(--text-disabled);" />
+      <UIcon name="i-lucide-loader-2" class="size-6 animate-spin text-meta" />
     </div>
 
     <!-- Delete confirmation -->
     <UModal v-model:open="showDeleteConfirm">
       <template #content>
-        <div class="p-6 space-y-4" style="background: var(--surface-overlay);">
+        <div class="p-6 space-y-4 bg-overlay">
           <h3 class="text-page-title">Delete Command</h3>
-          <p class="text-[13px]" style="color: var(--text-secondary);">
-            Delete <strong class="font-mono">/{{ command?.frontmatter.name }}</strong>? This removes the file from disk.
+          <p class="text-[13px] text-body">
+            Permanently delete <strong>/{{ command?.frontmatter.name }}</strong>? This action cannot be undone.
           </p>
           <div class="flex justify-end gap-2">
             <UButton label="Cancel" variant="ghost" color="neutral" size="sm" @click="showDeleteConfirm = false" />

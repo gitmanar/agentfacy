@@ -20,7 +20,7 @@ const filteredSkills = computed(() => {
   <div>
     <PageHeader title="Skills">
       <template #trailing>
-        <span class="font-mono text-[12px]" style="color: var(--text-disabled);">{{ skills.length }}</span>
+        <span class="font-mono text-[12px] text-meta">{{ skills.length }}</span>
       </template>
       <template #right>
         <UButton label="New Skill" icon="i-lucide-plus" size="sm" @click="showCreateModal = true" />
@@ -28,6 +28,10 @@ const filteredSkills = computed(() => {
     </PageHeader>
 
     <div class="px-6 py-4">
+      <p class="text-[12px] mb-4 leading-relaxed text-label">
+        Specific capabilities that can be added to agents and invoked as slash commands.
+      </p>
+
       <!-- Search -->
       <div class="mb-4">
         <input
@@ -37,8 +41,8 @@ const filteredSkills = computed(() => {
         />
       </div>
 
-      <div v-if="loading" class="flex justify-center py-12">
-        <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" style="color: var(--text-disabled);" />
+      <div v-if="loading" class="space-y-1">
+        <SkeletonRow v-for="i in 5" :key="i" />
       </div>
 
       <!-- Skill list -->
@@ -47,24 +51,20 @@ const filteredSkills = computed(() => {
           v-for="skill in filteredSkills"
           :key="skill.slug"
           :to="`/skills/${skill.slug}`"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group focus-ring"
-          style="border: 1px solid transparent;"
-          @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'; ($event.currentTarget as HTMLElement).style.background = 'var(--surface-raised)'"
-          @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'transparent'; ($event.currentTarget as HTMLElement).style.background = 'transparent'"
+          class="flex items-center gap-3 px-3 py-2.5 rounded-lg group focus-ring hover-row"
         >
           <!-- Icon -->
           <UIcon name="i-lucide-sparkles" class="size-3.5 shrink-0" style="color: var(--accent);" />
 
           <!-- Name -->
-          <span class="font-mono text-[13px] font-medium w-44 shrink-0 truncate" style="color: var(--text-primary);">
+          <span class="text-[13px] font-medium w-44 shrink-0 truncate">
             {{ skill.frontmatter.name }}
           </span>
 
           <!-- Context badge -->
           <span
             v-if="skill.frontmatter.context"
-            class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0"
-            style="background: rgba(255,255,255,0.06); color: var(--text-disabled);"
+            class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0 badge badge-subtle"
           >
             {{ skill.frontmatter.context }}
           </span>
@@ -72,41 +72,52 @@ const filteredSkills = computed(() => {
           <!-- Agent badge -->
           <span
             v-if="skill.frontmatter.agent"
-            class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0"
-            style="background: rgba(99,102,241,0.1); color: rgb(129,140,248);"
+            class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0 badge badge-agent"
           >
             agent: {{ skill.frontmatter.agent }}
           </span>
 
           <!-- Description -->
-          <span class="flex-1 text-[12px] truncate" style="color: var(--text-tertiary);">
+          <span class="flex-1 text-[12px] truncate text-label">
             {{ skill.frontmatter.description }}
           </span>
 
           <!-- Metadata -->
           <div class="flex items-center gap-3 shrink-0">
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
-              {{ Math.round(skill.body.length / 100) / 10 }}k chars
-            </span>
             <UIcon
               name="i-lucide-chevron-right"
-              class="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
-              style="color: var(--text-disabled);"
+              class="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-meta"
             />
           </div>
         </NuxtLink>
       </div>
 
-      <!-- Empty state -->
-      <div v-else class="flex flex-col items-center justify-center py-16 space-y-3">
-        <UIcon name="i-lucide-sparkles" class="size-10" style="color: var(--text-disabled);" />
-        <p class="text-[13px]" style="color: var(--text-tertiary);">
-          {{ searchQuery ? 'No skills match your search.' : 'No skills found.' }}
-        </p>
-        <p v-if="!searchQuery" class="text-[12px] max-w-sm text-center leading-relaxed" style="color: var(--text-disabled);">
-          Skills are reusable prompts that can be invoked as slash commands. Create one to define a repeatable workflow.
-        </p>
-        <UButton v-if="!searchQuery" label="Create your first skill" size="sm" @click="showCreateModal = true" />
+      <!-- Empty state: search miss -->
+      <div v-else-if="searchQuery" class="flex flex-col items-center justify-center py-16">
+        <p class="text-[13px] text-label">No skills match your search.</p>
+      </div>
+
+      <!-- Empty state: no skills -->
+      <div v-else class="flex flex-col items-center justify-center py-12 space-y-5">
+        <div class="rounded-lg p-4 bg-card max-w-sm w-full text-[12px] text-label leading-relaxed space-y-1">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-lucide-cpu" class="size-3.5" style="color: var(--accent);" />
+            <span>code-reviewer</span>
+            <span class="text-meta">agent</span>
+          </div>
+          <div class="flex items-center gap-2 ml-5">
+            <UIcon name="i-lucide-sparkles" class="size-3" style="color: var(--accent);" />
+            <span>security-audit</span>
+            <span class="text-meta">skill</span>
+          </div>
+          <div class="flex items-center gap-2 ml-5">
+            <UIcon name="i-lucide-sparkles" class="size-3" style="color: var(--accent);" />
+            <span>performance-check</span>
+            <span class="text-meta">skill</span>
+          </div>
+        </div>
+        <p class="text-[13px] text-label">Skills teach agents specific capabilities. Link a skill to an agent to extend what it can do.</p>
+        <UButton label="Create a skill" size="sm" @click="showCreateModal = true" />
       </div>
     </div>
 

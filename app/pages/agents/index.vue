@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { getAgentColor, modelColors } from '~/utils/colors'
+import { agentTemplates } from '~/utils/templates'
 
-const { agents, loading } = useAgents()
+const { agents, loading, create } = useAgents()
 const router = useRouter()
+const toast = useToast()
 
 const showCreateModal = ref(false)
 const searchQuery = ref('')
 const skillCounts = ref<Record<string, number>>({})
+const creatingTemplate = ref<string | null>(null)
 
 onMounted(async () => {
   try {
     skillCounts.value = await $fetch<Record<string, number>>('/api/agents/skill-counts')
   } catch {
-    // Non-critical — just don't show counts
+    // Non-critical
   }
 })
 
@@ -24,13 +27,28 @@ const filteredAgents = computed(() => {
     a.frontmatter.description?.toLowerCase().includes(q)
   )
 })
+
+async function useTemplate(templateId: string) {
+  const template = agentTemplates.find(t => t.id === templateId)
+  if (!template) return
+  creatingTemplate.value = templateId
+  try {
+    const agent = await create({ frontmatter: { ...template.frontmatter }, body: template.body })
+    toast.add({ title: `${template.frontmatter.name} created`, color: 'success' })
+    router.push(`/agents/${agent.slug}`)
+  } catch (e: any) {
+    toast.add({ title: 'Failed to create', description: e.data?.message || e.message, color: 'error' })
+  } finally {
+    creatingTemplate.value = null
+  }
+}
 </script>
 
 <template>
   <div>
     <PageHeader title="Agents">
       <template #trailing>
-        <span class="font-mono text-[12px]" style="color: var(--text-disabled);">{{ agents.length }}</span>
+        <span class="text-[12px] text-meta">{{ agents.length }}</span>
       </template>
       <template #right>
         <UButton label="New Agent" icon="i-lucide-plus" size="sm" @click="showCreateModal = true" />
@@ -38,8 +56,12 @@ const filteredAgents = computed(() => {
     </PageHeader>
 
     <div class="px-6 py-4">
+      <p class="text-[12px] mb-4 leading-relaxed text-label">
+        Specialized AI assistants with custom instructions and behavior.
+      </p>
+
       <!-- Search -->
-      <div class="mb-4">
+      <div class="mb-5">
         <input
           v-model="searchQuery"
           placeholder="Search agents..."
@@ -47,84 +69,86 @@ const filteredAgents = computed(() => {
         />
       </div>
 
-      <div v-if="loading" class="flex justify-center py-12">
-        <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" style="color: var(--text-disabled);" />
+      <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <SkeletonCard v-for="i in 6" :key="i" />
       </div>
 
-      <!-- Agent list -->
-      <div v-else-if="filteredAgents.length" class="space-y-1">
+      <!-- Agent card grid -->
+      <div v-else-if="filteredAgents.length" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         <NuxtLink
           v-for="agent in filteredAgents"
           :key="agent.slug"
           :to="`/agents/${agent.slug}`"
-          class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 group focus-ring"
-          style="border: 1px solid transparent;"
-          @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'; ($event.currentTarget as HTMLElement).style.background = 'var(--surface-raised)'"
-          @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'transparent'; ($event.currentTarget as HTMLElement).style.background = 'transparent'"
+          class="rounded-xl p-4 focus-ring hover-card relative overflow-hidden group bg-card"
         >
-          <!-- Color dot -->
+          <!-- Color accent bar -->
           <div
-            class="size-2.5 rounded-full shrink-0"
+            class="absolute inset-x-0 top-0 h-[3px]"
             :style="{ background: getAgentColor(agent.frontmatter.color) }"
           />
 
-          <!-- Name -->
-          <span class="font-mono text-[13px] font-medium w-44 shrink-0 truncate" style="color: var(--text-primary);">
-            {{ agent.frontmatter.name }}
-          </span>
-
-          <!-- Model badge -->
-          <span
-            v-if="agent.frontmatter.model && modelColors[agent.frontmatter.model]"
-            class="text-[10px] font-mono font-medium px-1.5 py-px rounded-full shrink-0"
-            :class="[modelColors[agent.frontmatter.model].bg, modelColors[agent.frontmatter.model].text]"
-          >
-            {{ agent.frontmatter.model }}
-          </span>
-
-          <!-- Skills badge -->
-          <span
-            v-if="skillCounts[agent.frontmatter.name]"
-            class="flex items-center gap-1 text-[10px] font-mono font-medium px-1.5 py-px rounded-full shrink-0"
-            style="background: var(--accent-muted); color: var(--accent);"
-          >
-            <UIcon name="i-lucide-sparkles" class="size-3" />
-            {{ skillCounts[agent.frontmatter.name] }}
-          </span>
+          <!-- Header: name + model -->
+          <div class="flex items-center gap-2.5 mb-2">
+            <div
+              class="size-2.5 rounded-full shrink-0"
+              :style="{ background: getAgentColor(agent.frontmatter.color) }"
+            />
+            <span class="text-[13px] font-medium truncate">
+              {{ agent.frontmatter.name }}
+            </span>
+            <span
+              v-if="agent.frontmatter.model && modelColors[agent.frontmatter.model]"
+              class="ml-auto text-[10px] font-mono font-medium px-1.5 py-px rounded-full shrink-0"
+              :class="[modelColors[agent.frontmatter.model].bg, modelColors[agent.frontmatter.model].text]"
+            >
+              {{ agent.frontmatter.model }}
+            </span>
+          </div>
 
           <!-- Description -->
-          <span class="flex-1 text-[12px] truncate" style="color: var(--text-tertiary);">
+          <p v-if="agent.frontmatter.description" class="text-[12px] leading-relaxed line-clamp-2 text-label">
             {{ agent.frontmatter.description }}
-          </span>
-
-          <!-- Metadata -->
-          <div class="flex items-center gap-3 shrink-0">
-            <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
-              {{ Math.round(agent.body.length / 100) / 10 }}k chars
-            </span>
-            <UIcon
-              v-if="agent.hasMemory"
-              name="i-lucide-brain"
-              class="size-3.5"
-              style="color: var(--text-disabled);"
-              title="Persistent memory"
-            />
-            <UIcon
-              name="i-lucide-chevron-right"
-              class="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
-              style="color: var(--text-disabled);"
-            />
-          </div>
+          </p>
         </NuxtLink>
       </div>
 
-      <!-- Empty state -->
-      <div v-else class="flex flex-col items-center justify-center py-16 space-y-3">
-        <UIcon name="i-lucide-cpu" class="size-10" style="color: var(--text-disabled);" />
-        <p class="text-[13px]" style="color: var(--text-tertiary);">
-          {{ searchQuery ? 'No agents match your search.' : 'No agents found.' }}
-        </p>
-        <UButton v-if="!searchQuery" label="Create your first agent" size="sm" @click="showCreateModal = true" />
+      <!-- Empty state: search miss -->
+      <div v-else-if="searchQuery" class="flex flex-col items-center justify-center py-16 space-y-3">
+        <p class="text-[13px] text-label">No agents match your search.</p>
+      </div>
+
+      <!-- Empty state: no agents — show templates -->
+      <div v-else class="space-y-5">
+        <div class="text-center py-4">
+          <p class="text-[13px] text-label">No agents yet. Start from a template or create your own.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <button
+            v-for="template in agentTemplates"
+            :key="template.id"
+            class="rounded-lg p-4 text-left hover-card focus-ring relative overflow-hidden group bg-card"
+            :disabled="creatingTemplate !== null"
+            @click="useTemplate(template.id)"
+          >
+            <div class="flex items-center gap-2.5 mb-2">
+              <UIcon :name="template.icon" class="size-4 shrink-0 text-label" />
+              <span class="text-[13px] font-medium">{{ template.frontmatter.name }}</span>
+              <UIcon
+                v-if="creatingTemplate === template.id"
+                name="i-lucide-loader-2"
+                class="size-3.5 ml-auto animate-spin text-meta"
+              />
+            </div>
+            <p class="text-[12px] text-label leading-relaxed line-clamp-2">
+              {{ template.frontmatter.description }}
+            </p>
+          </button>
+        </div>
+
+        <div class="text-center">
+          <UButton label="Or create from scratch" variant="ghost" size="sm" @click="showCreateModal = true" />
+        </div>
       </div>
     </div>
 

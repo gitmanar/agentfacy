@@ -38,7 +38,7 @@ const filteredCount = computed(() =>
   <div>
     <PageHeader title="Commands">
       <template #trailing>
-        <span class="font-mono text-[12px]" style="color: var(--text-disabled);">{{ commands.length }}</span>
+        <span class="font-mono text-[12px] text-meta">{{ commands.length }}</span>
       </template>
       <template #right>
         <UButton label="New Command" icon="i-lucide-plus" size="sm" @click="showCreateModal = true" />
@@ -46,6 +46,10 @@ const filteredCount = computed(() =>
     </PageHeader>
 
     <div class="px-6 py-4">
+      <p class="text-[12px] mb-4 leading-relaxed text-label">
+        Reusable workflows you can trigger with a slash command (e.g., /deploy).
+      </p>
+
       <!-- Search -->
       <div class="mb-4">
         <input
@@ -55,28 +59,24 @@ const filteredCount = computed(() =>
         />
       </div>
 
-      <div v-if="loading" class="flex justify-center py-12">
-        <UIcon name="i-lucide-loader-2" class="size-6 animate-spin" style="color: var(--text-disabled);" />
+      <div v-if="loading" class="space-y-1">
+        <SkeletonRow v-for="i in 5" :key="i" />
       </div>
 
       <div v-else-if="Object.keys(filteredGrouped).length" class="space-y-2">
         <div v-for="(cmds, dir) in filteredGrouped" :key="dir">
           <!-- Group header -->
           <button
-            class="flex items-center gap-2 w-full text-left py-2 px-2 -mx-2 rounded-md transition-colors focus-ring"
-            style="color: var(--text-secondary);"
-            @mouseenter="($event.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)'"
-            @mouseleave="($event.currentTarget as HTMLElement).style.background = 'transparent'"
+            class="flex items-center gap-2 w-full text-left py-2.5 px-3 -mx-2 rounded-lg hover-bg focus-ring text-body"
             @click="toggleGroup(dir)"
           >
             <UIcon
               :name="isExpanded(dir) ? 'i-lucide-chevron-down' : 'i-lucide-chevron-right'"
-              class="size-3.5"
-              style="color: var(--text-disabled);"
+              class="size-3.5 text-meta"
             />
-            <UIcon name="i-lucide-folder" class="size-3.5" style="color: var(--text-disabled);" />
+            <UIcon name="i-lucide-folder" class="size-3.5 text-meta" />
             <span class="font-mono text-[13px] font-medium">{{ dir }}</span>
-            <span class="font-mono text-[11px]" style="color: var(--text-disabled);">{{ cmds.length }}</span>
+            <span class="font-mono text-[12px] text-meta">{{ cmds.length }}</span>
           </button>
 
           <!-- Commands in group -->
@@ -85,42 +85,34 @@ const filteredCount = computed(() =>
               v-for="cmd in cmds"
               :key="cmd.slug"
               :to="`/commands/${cmd.slug}`"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-150 group focus-ring"
-              style="border: 1px solid transparent;"
-              @mouseenter="($event.currentTarget as HTMLElement).style.borderColor = 'var(--border-default)'; ($event.currentTarget as HTMLElement).style.background = 'var(--surface-raised)'"
-              @mouseleave="($event.currentTarget as HTMLElement).style.borderColor = 'transparent'; ($event.currentTarget as HTMLElement).style.background = 'transparent'"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg group focus-ring hover-row"
             >
               <!-- Terminal icon -->
-              <span class="font-mono text-[10px] font-medium shrink-0" style="color: var(--text-disabled);">&gt;_</span>
+              <span class="font-mono text-[10px] font-medium shrink-0 text-meta">&gt;_</span>
 
               <!-- Name -->
-              <span class="font-mono text-[13px] font-medium w-44 shrink-0 truncate" style="color: var(--text-primary);">
+              <span class="text-[13px] font-medium w-44 shrink-0 truncate">
                 /{{ cmd.frontmatter.name }}
               </span>
 
               <!-- Argument hint badge -->
               <span
                 v-if="cmd.frontmatter['argument-hint']"
-                class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0"
-                style="background: rgba(255,255,255,0.06); color: var(--text-disabled);"
+                class="text-[10px] font-mono px-1.5 py-px rounded-full shrink-0 badge badge-subtle"
               >
                 {{ cmd.frontmatter['argument-hint'] }}
               </span>
 
               <!-- Description -->
-              <span class="flex-1 text-[12px] truncate" style="color: var(--text-tertiary);">
+              <span class="flex-1 text-[12px] truncate text-label">
                 {{ cmd.frontmatter.description }}
               </span>
 
               <!-- Metadata -->
               <div class="flex items-center gap-3 shrink-0">
-                <span class="font-mono text-[10px]" style="color: var(--text-disabled);">
-                  {{ Math.round(cmd.body.length / 100) / 10 }}k chars
-                </span>
                 <UIcon
                   name="i-lucide-chevron-right"
-                  class="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  style="color: var(--text-disabled);"
+                  class="size-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-meta"
                 />
               </div>
             </NuxtLink>
@@ -128,13 +120,20 @@ const filteredCount = computed(() =>
         </div>
       </div>
 
-      <!-- Empty state -->
-      <div v-else class="flex flex-col items-center justify-center py-16 space-y-3">
-        <UIcon name="i-lucide-terminal" class="size-10" style="color: var(--text-disabled);" />
-        <p class="text-[13px]" style="color: var(--text-tertiary);">
-          {{ searchQuery ? 'No commands match your search.' : 'No commands found.' }}
-        </p>
-        <UButton v-if="!searchQuery" label="Create your first command" size="sm" @click="showCreateModal = true" />
+      <!-- Empty state: search miss -->
+      <div v-else-if="searchQuery" class="flex flex-col items-center justify-center py-16">
+        <p class="text-[13px] text-label">No commands match your search.</p>
+      </div>
+
+      <!-- Empty state: no commands -->
+      <div v-else class="flex flex-col items-center justify-center py-12 space-y-5">
+        <div class="rounded-lg p-4 bg-card max-w-sm w-full font-mono text-[12px] text-label leading-relaxed">
+          <span class="text-meta"># Example: a deploy command</span><br>
+          <span style="color: var(--accent);">/deploy</span> staging --skip-tests<br>
+          <span class="text-meta"># Claude follows your command's instructions</span>
+        </div>
+        <p class="text-[13px] text-label">Commands let you trigger repeatable workflows with a slash.</p>
+        <UButton label="Create a command" size="sm" @click="showCreateModal = true" />
       </div>
     </div>
 

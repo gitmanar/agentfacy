@@ -16,16 +16,27 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'Claude Code Agent Manager',
+      htmlAttrs: { lang: 'en' },
+      meta: [
+        { name: 'description', content: 'Visual manager for Claude Code agents, commands, skills, and plugins. Configure AI assistants without touching the terminal.' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'theme-color', content: '#F7F8FA' },
+        { property: 'og:title', content: 'Agent Manager — Claude Code' },
+        { property: 'og:description', content: 'Visual manager for Claude Code agents, commands, skills, and plugins. Configure AI assistants without touching the terminal.' },
+        { property: 'og:type', content: 'website' },
+        { name: 'twitter:card', content: 'summary' },
+      ],
       link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
-        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap' },
+        { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&display=swap' },
       ],
     },
     pageTransition: { name: 'page', mode: 'out-in' },
   },
 
   colorMode: {
-    preference: 'dark',
+    preference: 'light',
   },
 })
