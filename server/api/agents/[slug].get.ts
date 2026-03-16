@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { parseFrontmatter } from '../../utils/frontmatter'
@@ -12,7 +12,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: `Agent not found: ${slug}` })
   }
 
-  const raw = await readFile(filePath, 'utf-8')
+  const [raw, fileStat] = await Promise.all([
+    readFile(filePath, 'utf-8'),
+    stat(filePath),
+  ])
   const { frontmatter, body } = parseFrontmatter<AgentFrontmatter>(raw)
   const memoryDir = resolveClaudePath('agent-memory', slug)
 
@@ -23,5 +26,6 @@ export default defineEventHandler(async (event) => {
     body,
     hasMemory: existsSync(memoryDir),
     filePath,
+    lastModified: fileStat.mtimeMs,
   }
 })

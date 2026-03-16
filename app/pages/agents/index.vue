@@ -2,11 +2,12 @@
 import { getAgentColor, modelColors } from '~/utils/colors'
 import { agentTemplates } from '~/utils/templates'
 
-const { agents, loading, create } = useAgents()
+const { agents, loading, error, create, fetchAll: fetchAgents } = useAgents()
 const router = useRouter()
 const toast = useToast()
 
 const showCreateModal = ref(false)
+const showImportModal = ref(false)
 const searchQuery = ref('')
 const skillCounts = ref<Record<string, number>>({})
 const creatingTemplate = ref<string | null>(null)
@@ -51,6 +52,7 @@ async function useTemplate(templateId: string) {
         <span class="text-[12px] text-meta">{{ agents.length }}</span>
       </template>
       <template #right>
+        <UButton label="Import" icon="i-lucide-upload" size="sm" variant="soft" @click="showImportModal = true" />
         <UButton label="New Agent" icon="i-lucide-plus" size="sm" @click="showCreateModal = true" />
       </template>
     </PageHeader>
@@ -67,6 +69,16 @@ async function useTemplate(templateId: string) {
           placeholder="Search agents..."
           class="field-search max-w-xs"
         />
+      </div>
+
+      <!-- Error state -->
+      <div
+        v-if="error"
+        class="rounded-xl px-4 py-3 mb-4 flex items-start gap-3"
+        style="background: rgba(248, 113, 113, 0.06); border: 1px solid rgba(248, 113, 113, 0.12);"
+      >
+        <UIcon name="i-lucide-alert-circle" class="size-4 shrink-0 mt-0.5" style="color: var(--error);" />
+        <span class="text-[12px]" style="color: var(--error);">{{ error }}</span>
       </div>
 
       <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -154,11 +166,25 @@ async function useTemplate(templateId: string) {
 
     <UModal v-model:open="showCreateModal">
       <template #content>
-        <AgentForm
-          mode="create"
+        <AgentWizard
           @saved="(a) => { showCreateModal = false; router.push(`/agents/${a.slug}`) }"
           @cancel="showCreateModal = false"
         />
+      </template>
+    </UModal>
+
+    <UModal v-model:open="showImportModal">
+      <template #content>
+        <div class="p-6 space-y-4 bg-overlay">
+          <h3 class="text-page-title">Import Agent</h3>
+          <FileImport
+            type="agents"
+            @imported="(a) => { showImportModal = false; fetchAgents(); router.push(`/agents/${a.slug}`) }"
+          />
+          <div class="flex justify-end">
+            <UButton label="Cancel" variant="ghost" color="neutral" size="sm" @click="showImportModal = false" />
+          </div>
+        </div>
       </template>
     </UModal>
   </div>

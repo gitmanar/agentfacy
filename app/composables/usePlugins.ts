@@ -3,11 +3,17 @@ import type { Plugin, PluginDetail, SkillFrontmatter } from '~/types'
 export function usePlugins() {
   const plugins = useState<Plugin[]>('plugins', () => [])
   const loading = useState('pluginsLoading', () => false)
+  const error = useState<string | null>('pluginsError', () => null)
 
   async function fetchAll() {
     loading.value = true
+    error.value = null
     try {
       plugins.value = await $fetch<Plugin[]>('/api/plugins')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Failed to load plugins'
+      error.value = msg
+      console.error('[usePlugins] fetchAll:', msg)
     } finally {
       loading.value = false
     }
@@ -18,22 +24,22 @@ export function usePlugins() {
   }
 
   async function toggleEnabled(id: string, enabled: boolean) {
-    const { save } = useSettings()
-    const { settings } = useSettings()
+    const { save, settings } = useSettings()
     if (!settings.value) return
 
     const updated = {
       ...settings.value,
       enabledPlugins: {
-        ...(settings.value.enabledPlugins as Record<string, boolean>),
+        ...(settings.value.enabledPlugins as Record<string, boolean> | undefined),
         [id]: enabled,
       },
     }
     await save(updated)
 
-    // Update local plugin state
     const idx = plugins.value.findIndex(p => p.id === id)
-    if (idx >= 0) plugins.value[idx] = { ...plugins.value[idx], enabled }
+    if (idx >= 0) {
+      plugins.value[idx] = Object.assign({}, plugins.value[idx], { enabled })
+    }
   }
 
   async function uninstall(id: string) {
@@ -48,5 +54,5 @@ export function usePlugins() {
     })
   }
 
-  return { plugins, loading, fetchAll, fetchOne, toggleEnabled, uninstall, updateSkill }
+  return { plugins, loading, error, fetchAll, fetchOne, toggleEnabled, uninstall, updateSkill }
 }

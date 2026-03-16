@@ -10,6 +10,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: `Skill not found: ${slug}` })
   }
 
-  await rm(skillDir, { recursive: true })
+  try {
+    await rm(skillDir, { recursive: true })
+  } catch {
+    throw createError({ statusCode: 500, message: `Failed to delete skill: ${slug}` })
+  }
+
   return { deleted: true, slug }
 })

@@ -17,6 +17,22 @@ const frontmatter = ref<CommandFrontmatter>({
 const body = ref('')
 const allowedToolsStr = ref('')
 
+const { hasDraft, draftAge, loadDraft, clearDraft, scheduleSave } = useDraftRecovery(`command:${slug}`)
+
+watch([frontmatter, body], () => {
+  if (command.value) scheduleSave(frontmatter.value, body.value)
+}, { deep: true })
+
+function restoreDraft() {
+  const draft = loadDraft()
+  if (draft) {
+    frontmatter.value = draft.frontmatter as CommandFrontmatter
+    body.value = draft.body
+    clearDraft()
+    toast.add({ title: 'Draft restored', color: 'success' })
+  }
+}
+
 onMounted(async () => {
   try {
     command.value = await fetchOne(slug)
@@ -30,6 +46,10 @@ onMounted(async () => {
 })
 
 async function save() {
+  if (!frontmatter.value.name.trim()) {
+    toast.add({ title: 'Name is required', color: 'error' })
+    return
+  }
   saving.value = true
   try {
     const tools = allowedToolsStr.value
@@ -45,6 +65,7 @@ async function save() {
     }
     const updated = await update(slug, payload)
     command.value = updated
+    clearDraft()
     toast.add({ title: 'Saved', color: 'success' })
   } catch (e: any) {
     toast.add({ title: 'Failed to save', description: e.message, color: 'error' })
@@ -119,6 +140,20 @@ useUnsavedChanges(isDirty)
     </PageHeader>
 
     <div v-if="command" class="px-6 py-5 space-y-6">
+      <!-- Draft recovery banner -->
+      <div
+        v-if="hasDraft"
+        class="rounded-xl px-4 py-3 flex items-center gap-3"
+        style="background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.12);"
+      >
+        <UIcon name="i-lucide-archive-restore" class="size-4 shrink-0" style="color: var(--info, #3b82f6);" />
+        <span class="text-[12px] flex-1" style="color: var(--text-secondary);">
+          You have an unsaved draft from {{ draftAge }}.
+        </span>
+        <button class="text-[12px] font-medium px-2 py-1 rounded hover-bg" style="color: var(--info, #3b82f6);" @click="restoreDraft">Restore</button>
+        <button class="text-[12px] px-2 py-1 rounded hover-bg text-meta" @click="clearDraft">Dismiss</button>
+      </div>
+
       <!-- Configuration -->
       <div
         class="rounded-xl p-5 space-y-4 bg-card"
@@ -129,23 +164,25 @@ useUnsavedChanges(isDirty)
           <div class="field-group">
             <label class="field-label">Name</label>
             <input v-model="frontmatter.name" class="field-input" />
+            <span class="field-hint">The slash command name (e.g., "deploy" becomes /deploy)</span>
           </div>
           <div class="field-group">
             <label class="field-label">Expected Input</label>
             <input v-model="frontmatter['argument-hint']" class="field-input" placeholder="file name or topic" />
-            <span class="field-hint">What kind of input does this command expect?</span>
+            <span class="field-hint">Shown as a hint when users type this command</span>
           </div>
         </div>
 
         <div class="field-group">
           <label class="field-label">Description</label>
           <textarea v-model="frontmatter.description" rows="2" class="field-textarea" />
+          <span class="field-hint">Helps Claude understand when to suggest this command</span>
         </div>
 
         <div class="field-group">
           <label class="field-label">Tool Permissions</label>
           <input v-model="allowedToolsStr" class="field-input" placeholder="Read, Write, Bash" />
-          <span class="field-hint">What Claude can do when running this command. Leave blank to allow all. Options: Read (read files), Write (create/edit files), Bash (run terminal commands)</span>
+          <span class="field-hint">Restrict what Claude can do. Leave blank to allow all. Options: Read, Write, Edit, Bash, Glob, Grep</span>
         </div>
       </div>
 

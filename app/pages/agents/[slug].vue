@@ -11,9 +11,28 @@ const slug = route.params.slug as string
 const agent = ref<Agent | null>(null)
 const saving = ref(false)
 const agentSkills = ref<AgentSkill[]>([])
+const lastModified = ref<number | null>(null)
 
 const frontmatter = ref<AgentFrontmatter>({ name: '', description: '' })
 const body = ref('')
+
+const { hasDraft, draftAge, loadDraft, clearDraft, scheduleSave } = useDraftRecovery(`agent:${slug}`)
+const { versions, saveVersion, formatTime, simpleDiff } = useVersionHistory(`agent:${slug}`)
+
+// Auto-save on changes
+watch([frontmatter, body], () => {
+  if (agent.value) scheduleSave(frontmatter.value, body.value)
+}, { deep: true })
+
+function restoreDraft() {
+  const draft = loadDraft()
+  if (draft) {
+    frontmatter.value = draft.frontmatter as AgentFrontmatter
+    body.value = draft.body
+    clearDraft()
+    toast.add({ title: 'Draft restored', color: 'success' })
+  }
+}
 
 onMounted(async () => {
   try {
@@ -22,6 +41,7 @@ onMounted(async () => {
       $fetch<AgentSkill[]>(`/api/agents/${slug}/skills`),
     ])
     agent.value = agentData
+    lastModified.value = (agentData as any).lastModified ?? null
     agentSkills.value = skillsData
     frontmatter.value = { ...agent.value.frontmatter }
     body.value = agent.value.body
@@ -32,10 +52,20 @@ onMounted(async () => {
 })
 
 async function save() {
+  if (!frontmatter.value.name.trim()) {
+    toast.add({ title: 'Name is required', color: 'error' })
+    return
+  }
   saving.value = true
   try {
-    const updated = await update(slug, { frontmatter: frontmatter.value, body: body.value })
+    // Snapshot current state before overwriting
+    if (agent.value) {
+      saveVersion(agent.value.frontmatter, agent.value.body)
+    }
+    const updated = await update(slug, { frontmatter: frontmatter.value, body: body.value, lastModified: lastModified.value } as any)
     agent.value = updated
+    lastModified.value = (updated as any).lastModified ?? null
+    clearDraft()
     toast.add({ title: 'Saved', color: 'success' })
     if (updated.slug !== slug) router.replace(`/agents/${updated.slug}`)
   } catch (e: any) {
@@ -99,6 +129,14 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
         />
       </template>
       <template #right>
+        <a
+          :href="`/api/agents/${slug}/export`"
+          download
+          class="text-[12px] px-2 py-1 rounded focus-ring text-label hover-bg"
+          title="Download .md file"
+        >
+          <UIcon name="i-lucide-download" class="size-3.5" />
+        </a>
         <button
           class="text-[12px] px-2 py-1 rounded focus-ring text-label"
           @click="showDeleteConfirm = true"
@@ -111,6 +149,20 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
     </PageHeader>
 
     <div v-if="agent" class="px-6 py-5 space-y-6">
+      <!-- Draft recovery banner -->
+      <div
+        v-if="hasDraft"
+        class="rounded-xl px-4 py-3 flex items-center gap-3"
+        style="background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.12);"
+      >
+        <UIcon name="i-lucide-archive-restore" class="size-4 shrink-0" style="color: var(--info, #3b82f6);" />
+        <span class="text-[12px] flex-1" style="color: var(--text-secondary);">
+          You have an unsaved draft from {{ draftAge }}.
+        </span>
+        <button class="text-[12px] font-medium px-2 py-1 rounded hover-bg" style="color: var(--info, #3b82f6);" @click="restoreDraft">Restore</button>
+        <button class="text-[12px] px-2 py-1 rounded hover-bg text-meta" @click="clearDraft">Dismiss</button>
+      </div>
+
       <!-- Configuration -->
       <div
         class="rounded-xl overflow-hidden"
@@ -162,6 +214,7 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
             <div class="field-group">
               <label class="field-label">Name</label>
               <input v-model="frontmatter.name" class="field-input" />
+              <span class="field-hint">Lowercase identifier used to invoke this agent (e.g., code-reviewer)</span>
             </div>
             <div class="field-group">
               <label class="field-label">Model</label>
@@ -191,6 +244,7 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
                   @click="frontmatter.model = 'haiku'"
                 >haiku</button>
               </div>
+              <span class="field-hint">Opus is most capable, Sonnet balances speed and quality, Haiku is fastest</span>
             </div>
             <div class="field-group">
               <label class="field-label">Color</label>
@@ -214,6 +268,7 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
                   @click="frontmatter.color = c.value"
                 />
               </div>
+              <span class="field-hint">Visual tag to help you tell agents apart at a glance</span>
             </div>
             <div class="field-group">
               <label class="field-label">Memory</label>
@@ -333,6 +388,29 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
           placeholder="Tell this agent how it should behave..."
         />
       </div>
+
+      <!-- Version history (collapsed) -->
+      <details v-if="versions.length" class="group">
+        <summary class="text-[10px] cursor-pointer list-none flex items-center gap-1.5 text-meta">
+          <UIcon name="i-lucide-history" class="size-3" />
+          Version history ({{ versions.length }})
+        </summary>
+        <div class="mt-2 space-y-1 pl-4.5">
+          <button
+            v-for="(ver, idx) in versions.slice(0, 10)"
+            :key="ver.timestamp"
+            class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover-bg text-[11px]"
+            @click="() => { frontmatter = { ...(ver.frontmatter as any) }; body = ver.body; toast.add({ title: 'Restored version', color: 'success' }) }"
+          >
+            <span class="font-mono text-meta shrink-0">{{ formatTime(ver.timestamp) }}</span>
+            <span v-if="idx < versions.length - 1" class="text-meta">
+              <span v-if="simpleDiff(versions[idx + 1]!.body, ver.body).added" class="text-green-500">+{{ simpleDiff(versions[idx + 1]!.body, ver.body).added }}</span>
+              <span v-if="simpleDiff(versions[idx + 1]!.body, ver.body).removed" class="text-red-400 ml-1">-{{ simpleDiff(versions[idx + 1]!.body, ver.body).removed }}</span>
+            </span>
+            <span class="ml-auto text-meta">click to restore</span>
+          </button>
+        </div>
+      </details>
 
       <!-- File location (collapsed by default) -->
       <details class="group">

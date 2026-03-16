@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { commands, loading, groupedByDirectory, remove } = useCommands()
+const { commands, loading, error, groupedByDirectory, remove } = useCommands()
 const router = useRouter()
 const toast = useToast()
 
@@ -57,6 +57,15 @@ const filteredCount = computed(() =>
           placeholder="Search commands..."
           class="field-search max-w-xs"
         />
+      </div>
+
+      <div
+        v-if="error"
+        class="rounded-xl px-4 py-3 mb-4 flex items-start gap-3"
+        style="background: rgba(248, 113, 113, 0.06); border: 1px solid rgba(248, 113, 113, 0.12);"
+      >
+        <UIcon name="i-lucide-alert-circle" class="size-4 shrink-0 mt-0.5" style="color: var(--error);" />
+        <span class="text-[12px]" style="color: var(--error);">{{ error }}</span>
       </div>
 
       <div v-if="loading" class="space-y-1">

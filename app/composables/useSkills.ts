@@ -3,11 +3,17 @@ import type { Skill, SkillPayload } from '~/types'
 export function useSkills() {
   const skills = useState<Skill[]>('skills', () => [])
   const loading = useState('skillsLoading', () => false)
+  const error = useState<string | null>('skillsError', () => null)
 
   async function fetchAll() {
     loading.value = true
+    error.value = null
     try {
       skills.value = await $fetch<Skill[]>('/api/skills')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Failed to load skills'
+      error.value = msg
+      console.error('[useSkills] fetchAll:', msg)
     } finally {
       loading.value = false
     }
@@ -36,5 +42,5 @@ export function useSkills() {
     skills.value = skills.value.filter(s => s.slug !== slug)
   }
 
-  return { skills, loading, fetchAll, fetchOne, create, update, remove }
+  return { skills, loading, error, fetchAll, fetchOne, create, update, remove }
 }

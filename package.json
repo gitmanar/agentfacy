@@ -14,10 +14,12 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.76",
     "@nuxt/ui": "^3",
     "@vue-flow/controls": "^1.1",
     "@vue-flow/core": "^1.41",
     "@vue-flow/minimap": "^1.5",
+    "marked": "^17.0.4",
     "nuxt": "^3.16",
     "yaml": "^2.6"
   },

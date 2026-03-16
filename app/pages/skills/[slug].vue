@@ -14,6 +14,22 @@ const saving = ref(false)
 const frontmatter = ref<SkillFrontmatter>({ name: '', description: '' })
 const body = ref('')
 
+const { hasDraft, draftAge, loadDraft, clearDraft, scheduleSave } = useDraftRecovery(`skill:${slug}`)
+
+watch([frontmatter, body], () => {
+  if (skill.value) scheduleSave(frontmatter.value, body.value)
+}, { deep: true })
+
+function restoreDraft() {
+  const draft = loadDraft()
+  if (draft) {
+    frontmatter.value = draft.frontmatter as SkillFrontmatter
+    body.value = draft.body
+    clearDraft()
+    toast.add({ title: 'Draft restored', color: 'success' })
+  }
+}
+
 onMounted(async () => {
   try {
     skill.value = await fetchOne(slug)
@@ -43,6 +59,7 @@ async function save() {
 
     const updated = await update(slug, { frontmatter: fm, body: body.value })
     skill.value = updated
+    clearDraft()
     toast.add({ title: 'Saved', color: 'success' })
     if (updated.slug !== slug) router.replace(`/skills/${updated.slug}`)
   } catch (e: any) {
@@ -104,6 +121,14 @@ const agentOptions = computed(() =>
         <UIcon name="i-lucide-sparkles" class="size-4" style="color: var(--accent);" />
       </template>
       <template #right>
+        <a
+          :href="`/api/skills/${slug}/export`"
+          download
+          class="text-[12px] px-2 py-1 rounded focus-ring text-label hover-bg"
+          title="Download .md file"
+        >
+          <UIcon name="i-lucide-download" class="size-3.5" />
+        </a>
         <button
           class="text-[12px] px-2 py-1 rounded focus-ring text-label"
           @click="showDeleteConfirm = true"
@@ -116,6 +141,20 @@ const agentOptions = computed(() =>
     </PageHeader>
 
     <div v-if="skill" class="px-6 py-5 space-y-6">
+      <!-- Draft recovery banner -->
+      <div
+        v-if="hasDraft"
+        class="rounded-xl px-4 py-3 flex items-center gap-3"
+        style="background: rgba(59, 130, 246, 0.06); border: 1px solid rgba(59, 130, 246, 0.12);"
+      >
+        <UIcon name="i-lucide-archive-restore" class="size-4 shrink-0" style="color: var(--info, #3b82f6);" />
+        <span class="text-[12px] flex-1" style="color: var(--text-secondary);">
+          You have an unsaved draft from {{ draftAge }}.
+        </span>
+        <button class="text-[12px] font-medium px-2 py-1 rounded hover-bg" style="color: var(--info, #3b82f6);" @click="restoreDraft">Restore</button>
+        <button class="text-[12px] px-2 py-1 rounded hover-bg text-meta" @click="clearDraft">Dismiss</button>
+      </div>
+
       <!-- Configuration -->
       <div
         class="rounded-xl overflow-hidden"
@@ -165,11 +204,12 @@ const agentOptions = computed(() =>
             <div class="field-group">
               <label class="field-label">Name</label>
               <input v-model="frontmatter.name" class="field-input" />
+              <span class="field-hint">Identifier for this skill. Also used as the slash command name.</span>
             </div>
             <div class="field-group">
               <label class="field-label">Availability</label>
               <input v-model="frontmatter.context" class="field-input" placeholder="Leave blank for always available" />
-              <span class="field-hint">Optionally restrict when this skill appears</span>
+              <span class="field-hint">Restrict when this skill appears (e.g., only in certain repos)</span>
             </div>
             <div class="field-group">
               <label class="field-label">Agent</label>
@@ -182,12 +222,14 @@ const agentOptions = computed(() =>
               <datalist v-if="agentOptions.length > 0" id="agent-opts-detail">
                 <option v-for="a in agentOptions" :key="a" :value="a" />
               </datalist>
+              <span class="field-hint">Link this skill to a specific agent. The skill's instructions will be loaded when that agent is active.</span>
             </div>
           </div>
 
           <div class="field-group">
             <label class="field-label">Description</label>
             <textarea v-model="frontmatter.description" rows="2" class="field-textarea" />
+            <span class="field-hint">Helps Claude decide when to use this skill. Be specific about the trigger.</span>
           </div>
         </div>
       </div>

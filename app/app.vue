@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
-const { claudeDir, load: loadConfig } = useClaudeDir()
+const { claudeDir, exists: claudeDirExists, load: loadConfig } = useClaudeDir()
 const { fetchAll: fetchAgents, agents } = useAgents()
 const { fetchAll: fetchCommands, commands } = useCommands()
 const { fetchAll: fetchPlugins, plugins } = usePlugins()
@@ -9,6 +9,7 @@ const { fetchAll: fetchSkills, skills } = useSkills()
 const initialized = ref(false)
 const showSearch = ref(false)
 const sidebarOpen = ref(false)
+const chatOpen = ref(false)
 const colorMode = useColorMode()
 
 function toggleTheme() {
@@ -16,6 +17,18 @@ function toggleTheme() {
 }
 
 watch(() => route.path, () => { sidebarOpen.value = false })
+
+// Cmd+J to toggle chat
+if (import.meta.client) {
+  const chatHandler = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'j') {
+      e.preventDefault()
+      chatOpen.value = !chatOpen.value
+    }
+  }
+  onMounted(() => document.addEventListener('keydown', chatHandler))
+  onUnmounted(() => document.removeEventListener('keydown', chatHandler))
+}
 
 onMounted(async () => {
   await loadConfig()
@@ -170,6 +183,29 @@ function badgeFor(to: string) {
           </button>
         </div>
 
+        <!-- Chat with Claude -->
+        <div class="px-3 pb-1">
+          <button
+            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all duration-150 focus-ring cursor-pointer"
+            :style="{
+              color: chatOpen ? 'var(--accent)' : 'var(--text-tertiary)',
+              background: chatOpen ? 'var(--accent-muted)' : 'transparent',
+            }"
+            @click="chatOpen = !chatOpen"
+          >
+            <div class="size-4 relative flex items-center justify-center">
+              <UIcon name="i-lucide-zap" class="size-4" />
+              <div
+                v-if="chatOpen"
+                class="absolute -top-0.5 -right-0.5 size-1.5 rounded-full"
+                style="background: var(--accent); box-shadow: 0 0 6px var(--accent-glow);"
+              />
+            </div>
+            <span class="text-[12px] flex-1 text-left" style="font-family: var(--font-sans);">Claude</span>
+            <kbd class="text-[9px] font-mono px-1.5 py-0.5 rounded" style="background: var(--badge-subtle-bg); color: var(--text-disabled);">⌘J</kbd>
+          </button>
+        </div>
+
         <!-- Theme toggle -->
         <div class="px-3 pb-1">
           <button
@@ -194,14 +230,19 @@ function badgeFor(to: string) {
 
       <!-- Main content -->
       <main class="flex-1 min-w-0 h-full overflow-y-auto" style="background: var(--surface-base);">
-        <Transition name="page" mode="out-in">
-          <NuxtPage v-if="initialized" />
-        </Transition>
-        <div v-if="!initialized" class="flex items-center justify-center h-full">
+        <!-- Setup wizard when directory doesn't exist -->
+        <SetupWizard
+          v-if="initialized && !claudeDirExists"
+          @complete="async () => { await loadConfig(); await Promise.all([fetchAgents(), fetchCommands(), fetchPlugins(), fetchSkills()]) }"
+        />
+
+        <NuxtPage v-else-if="initialized" />
+        <div v-else class="flex items-center justify-center h-full">
           <UIcon name="i-lucide-loader-2" class="size-5 animate-spin" style="color: var(--text-disabled);" />
         </div>
       </main>
     </div>
     <GlobalSearch />
+    <ChatPanel v-model:open="chatOpen" />
   </UApp>
 </template>

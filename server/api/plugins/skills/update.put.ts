@@ -39,12 +39,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: `Plugin not found: ${pluginId}` })
   }
 
-  const skillPath = join(entries[0].installPath, 'skills', skill, 'SKILL.md')
+  const entry = entries[0]!
+  const skillPath = join(entry.installPath, 'skills', skill, 'SKILL.md')
   if (!existsSync(skillPath)) {
     throw createError({ statusCode: 404, message: `Skill not found: ${skill}` })
   }
 
-  const content = serializeFrontmatter(frontmatter as unknown as Record<string, unknown>, body)
+  const content = serializeFrontmatter(frontmatter, body)
   await writeFile(skillPath, content, 'utf-8')
 
   return { ok: true }

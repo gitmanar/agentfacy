@@ -3,11 +3,17 @@ import type { Command, CommandPayload } from '~/types'
 export function useCommands() {
   const commands = useState<Command[]>('commands', () => [])
   const loading = useState('commandsLoading', () => false)
+  const error = useState<string | null>('commandsError', () => null)
 
   async function fetchAll() {
     loading.value = true
+    error.value = null
     try {
       commands.value = await $fetch<Command[]>('/api/commands')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Failed to load commands'
+      error.value = msg
+      console.error('[useCommands] fetchAll:', msg)
     } finally {
       loading.value = false
     }
@@ -46,5 +52,5 @@ export function useCommands() {
     return groups
   })
 
-  return { commands, loading, fetchAll, fetchOne, create, update, remove, groupedByDirectory }
+  return { commands, loading, error, fetchAll, fetchOne, create, update, remove, groupedByDirectory }
 }

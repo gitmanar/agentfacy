@@ -23,6 +23,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: `Command not found: ${slug}` })
   }
 
-  await unlink(filePath)
+  try {
+    await unlink(filePath)
+  } catch {
+    throw createError({ statusCode: 500, message: `Failed to delete command: ${slug}` })
+  }
+
   return { deleted: true, slug }
 })

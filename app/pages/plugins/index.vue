@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { plugins, loading, fetchAll, toggleEnabled } = usePlugins()
+const { plugins, loading, error, fetchAll, toggleEnabled } = usePlugins()
 const toast = useToast()
 
 const searchQuery = ref('')
@@ -60,6 +60,15 @@ function formatDate(iso: string) {
           placeholder="Search plugins..."
           class="field-search max-w-xs"
         />
+      </div>
+
+      <div
+        v-if="error"
+        class="rounded-xl px-4 py-3 mb-4 flex items-start gap-3"
+        style="background: rgba(248, 113, 113, 0.06); border: 1px solid rgba(248, 113, 113, 0.12);"
+      >
+        <UIcon name="i-lucide-alert-circle" class="size-4 shrink-0 mt-0.5" style="color: var(--error);" />
+        <span class="text-[12px]" style="color: var(--error);">{{ error }}</span>
       </div>
 
       <div v-if="loading" class="space-y-1">
@@ -139,12 +148,18 @@ function formatDate(iso: string) {
         </div>
       </div>
 
-      <!-- Empty state -->
-      <div v-else class="flex flex-col items-center justify-center py-16 space-y-3">
-        <UIcon name="i-lucide-puzzle" class="size-10 text-meta" />
-        <p class="text-[13px] text-label">
-          {{ searchQuery ? 'No plugins match your search.' : 'No plugins installed.' }}
-        </p>
+      <!-- Empty state: search miss -->
+      <div v-else-if="searchQuery" class="flex flex-col items-center justify-center py-16">
+        <p class="text-[13px] text-label">No plugins match your search.</p>
+      </div>
+
+      <!-- Empty state: no plugins -->
+      <div v-else class="flex flex-col items-center justify-center py-12 space-y-5">
+        <div class="rounded-lg p-4 bg-card max-w-sm w-full font-mono text-[12px] text-label leading-relaxed">
+          <span class="text-meta"># Install a plugin via Claude Code CLI</span><br>
+          <span style="color: var(--accent);">claude</span> plugin add &lt;plugin-name&gt;
+        </div>
+        <p class="text-[13px] text-label">Plugins are installed via the Claude Code CLI and managed here.</p>
       </div>
     </div>
   </div>

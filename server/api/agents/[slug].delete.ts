@@ -10,6 +10,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: `Agent not found: ${slug}` })
   }
 
-  await unlink(filePath)
+  try {
+    await unlink(filePath)
+  } catch {
+    throw createError({ statusCode: 500, message: `Failed to delete agent: ${slug}` })
+  }
+
   return { deleted: true, slug }
 })

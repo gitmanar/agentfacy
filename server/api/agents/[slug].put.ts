@@ -1,4 +1,4 @@
-import { writeFile, rename, mkdir } from 'node:fs/promises'
+import { writeFile, rename, mkdir, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { serializeFrontmatter } from '../../utils/frontmatter'
@@ -12,7 +12,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: `Agent not found: ${slug}` })
   }
 
-  const payload = await readBody<AgentPayload>(event)
+  const payload = await readBody<AgentPayload & { lastModified?: number }>(event)
+
+  // File conflict detection
+  if (payload.lastModified) {
+    const fileStat = await stat(filePath)
+    if (Math.abs(fileStat.mtimeMs - payload.lastModified) > 1000) {
+      throw createError({ statusCode: 409, message: 'This file was modified externally. Reload to see the latest version.' })
+    }
+  }
   const newSlug = payload.frontmatter.name
   const newFilePath = resolveClaudePath('agents', `${newSlug}.md`)
 
@@ -47,6 +55,8 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const newStat = await stat(newFilePath)
+
   return {
     slug: newSlug,
     filename: `${newSlug}.md`,
@@ -54,5 +64,6 @@ export default defineEventHandler(async (event) => {
     body: payload.body,
     hasMemory: existsSync(resolveClaudePath('agent-memory', newSlug)),
     filePath: newFilePath,
+    lastModified: newStat.mtimeMs,
   }
 })

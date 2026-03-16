@@ -3,11 +3,17 @@ import type { Agent, AgentPayload } from '~/types'
 export function useAgents() {
   const agents = useState<Agent[]>('agents', () => [])
   const loading = useState('agentsLoading', () => false)
+  const error = useState<string | null>('agentsError', () => null)
 
   async function fetchAll() {
     loading.value = true
+    error.value = null
     try {
       agents.value = await $fetch<Agent[]>('/api/agents')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Failed to load agents'
+      error.value = msg
+      console.error('[useAgents] fetchAll:', msg)
     } finally {
       loading.value = false
     }
@@ -32,9 +38,9 @@ export function useAgents() {
   }
 
   async function remove(slug: string) {
-    await $fetch(`/api/agents/${slug}`, { method: 'DELETE' })
+    await $fetch(`/api/agents/${slug}`, { method: 'DELETE' as const })
     agents.value = agents.value.filter(a => a.slug !== slug)
   }
 
-  return { agents, loading, fetchAll, fetchOne, create, update, remove }
+  return { agents, loading, error, fetchAll, fetchOne, create, update, remove }
 }
