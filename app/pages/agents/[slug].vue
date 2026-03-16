@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Agent, AgentFrontmatter, AgentSkill } from '~/types'
 import { getAgentColor, modelColors, agentColorMap } from '~/utils/colors'
+import { scoreAgent } from '~/utils/agentScoring'
 
 const route = useRoute()
 const router = useRouter()
@@ -111,6 +112,8 @@ const isDirty = computed(() => {
 useUnsavedChanges(isDirty)
 
 const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ value, hex }))
+
+const quality = computed(() => scoreAgent(frontmatter.value, body.value))
 </script>
 
 <template>
@@ -363,6 +366,40 @@ const colorOptions = Object.entries(agentColorMap).map(([value, hex]) => ({ valu
           </NuxtLink>
         </div>
       </div>
+
+      <!-- Quality Score -->
+      <details v-if="quality.issues.length" class="group">
+        <summary
+          class="flex items-center gap-2.5 cursor-pointer list-none px-1 py-1"
+        >
+          <div
+            class="size-5 rounded-full flex items-center justify-center text-[9px] font-bold"
+            :style="{ background: quality.color + '18', color: quality.color }"
+          >
+            {{ quality.score }}
+          </div>
+          <span class="text-[12px] font-medium" :style="{ color: quality.color }">
+            {{ quality.label }}
+          </span>
+          <span class="text-[11px] text-meta">
+            — {{ quality.issues.length }} suggestion{{ quality.issues.length === 1 ? '' : 's' }}
+          </span>
+        </summary>
+        <div class="mt-2 space-y-1.5 pl-7">
+          <div
+            v-for="(issue, idx) in quality.issues"
+            :key="idx"
+            class="flex items-start gap-2 text-[12px] leading-relaxed"
+          >
+            <UIcon
+              :name="issue.type === 'error' ? 'i-lucide-circle-x' : issue.type === 'warning' ? 'i-lucide-alert-triangle' : 'i-lucide-lightbulb'"
+              class="size-3.5 shrink-0 mt-0.5"
+              :style="{ color: issue.type === 'error' ? 'var(--error)' : issue.type === 'warning' ? 'var(--warning, #eab308)' : 'var(--text-disabled)' }"
+            />
+            <span class="text-label">{{ issue.message }}</span>
+          </div>
+        </div>
+      </details>
 
       <!-- Instructions Editor -->
       <div

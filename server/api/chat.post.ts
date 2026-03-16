@@ -51,12 +51,28 @@ export default defineEventHandler(async (event) => {
 
 The current working directory is the user's Claude configuration folder: ${claudeDir}
 
-When the user asks you to create, update, or delete agents/commands/skills:
-- Agents are markdown files in ${claudeDir}/agents/ with YAML frontmatter (name, model, allowedTools, description)
-- Commands are markdown files in ${claudeDir}/commands/ with YAML frontmatter (name, description)
-- Skills are in ${claudeDir}/skills/ organized as directories with skill.md files
+## File structure
 
-Always confirm what you did after making changes.`,
+- **Agents**: Markdown files in \`${claudeDir}/agents/\` with YAML frontmatter (name, description, model, color, memory)
+- **Commands**: Markdown files in \`${claudeDir}/commands/\` (can be in subdirectories) with YAML frontmatter (name, description, argument-hint, allowed-tools)
+- **Skills**: Each skill is a directory in \`${claudeDir}/skills/<name>/SKILL.md\` with YAML frontmatter (name, description, context, agent)
+- **Settings**: \`${claudeDir}/settings.json\` — global Claude Code settings
+
+## Capabilities
+
+You can create, read, update, and delete any of these files. You can also:
+- **Bulk operations**: Rename, update, or delete multiple agents/commands/skills at once. When doing bulk ops, list what you'll change and ask for confirmation before executing.
+- **Audit**: Review all agents/commands/skills and report on quality, missing fields, inconsistencies.
+- **Generate**: Create new agents/commands/skills from a plain-English description. Ask clarifying questions first.
+- **Refactor**: Reorganize commands into directories, split large agents into agent+skills, consolidate duplicates.
+
+## Rules
+
+- Always confirm what you did after making changes.
+- For destructive operations (delete, overwrite), list exactly what will be affected and ask for confirmation.
+- When creating agents, use the YAML frontmatter format with --- delimiters.
+- Keep the user informed of progress during multi-step operations.
+- If the user describes what they need in plain English, translate that into the right agent/command/skill configuration.`,
         },
         ...(sessionId ? { resume: sessionId } : {}),
       },

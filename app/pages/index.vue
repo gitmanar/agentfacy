@@ -11,9 +11,23 @@ const { settings, load: loadSettings } = useSettings()
 const dirInput = ref('')
 const settingDir = ref(false)
 
+interface Suggestion {
+  type: string
+  severity: 'warning' | 'info'
+  message: string
+  target: { type: 'agent' | 'command' | 'skill'; slug: string }
+}
+const suggestions = ref<Suggestion[]>([])
+
 onMounted(async () => {
   dirInput.value = claudeDir.value || ''
   await Promise.all([loadSettings(), fetchPlugins(), fetchSkills()])
+  // Load suggestions after main data
+  try {
+    suggestions.value = await $fetch<Suggestion[]>('/api/suggestions')
+  } catch {
+    // Non-critical
+  }
 })
 
 async function changeDir() {
@@ -167,6 +181,37 @@ const hasContent = computed(() =>
         v-if="!hasContent"
         @created="(agent) => navigateTo(`/agents/${agent.slug}`)"
       />
+
+      <!-- Suggestions -->
+      <div
+        v-if="suggestions.length && hasContent"
+        class="rounded-xl overflow-hidden"
+        style="border: 1px solid var(--border-subtle);"
+      >
+        <div class="flex items-center justify-between px-4 py-2.5" style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);">
+          <h3 class="text-section-label flex items-center gap-2">
+            <UIcon name="i-lucide-lightbulb" class="size-3.5" style="color: var(--accent);" />
+            Suggestions
+          </h3>
+          <span class="font-mono text-[10px] text-meta">{{ suggestions.length }}</span>
+        </div>
+        <div class="divide-y" style="divide-color: var(--border-subtle);">
+          <NuxtLink
+            v-for="(s, idx) in suggestions.slice(0, 5)"
+            :key="idx"
+            :to="`/${s.target.type}s/${s.target.slug}`"
+            class="flex items-center gap-3 px-4 py-2.5 hover-bg"
+          >
+            <UIcon
+              :name="s.severity === 'warning' ? 'i-lucide-alert-triangle' : 'i-lucide-info'"
+              class="size-3.5 shrink-0"
+              :style="{ color: s.severity === 'warning' ? 'var(--warning, #eab308)' : 'var(--text-disabled)' }"
+            />
+            <span class="text-[12px] text-label flex-1">{{ s.message }}</span>
+            <UIcon name="i-lucide-chevron-right" class="size-3.5 text-meta" />
+          </NuxtLink>
+        </div>
+      </div>
 
       <!-- Graph CTA -->
       <NuxtLink
