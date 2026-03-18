@@ -1,8 +1,10 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { homedir } from 'node:os'
 import { resolveClaudePath } from '../../../utils/claudeDir'
 import { serializeFrontmatter } from '../../../utils/frontmatter'
+import { validateSlug, validatePluginId, isContainedIn } from '../../../utils/security'
 import type { SkillFrontmatter } from '~/types'
 
 interface InstalledEntry {
@@ -31,6 +33,8 @@ export default defineEventHandler(async (event) => {
   if (!pluginId || !skill) {
     throw createError({ statusCode: 400, message: 'pluginId and skill are required' })
   }
+  validatePluginId(pluginId)
+  validateSlug(skill)
 
   const installedPath = resolveClaudePath('plugins', 'installed_plugins.json')
   const installed = await readJson<{ plugins: Record<string, InstalledEntry[]> }>(installedPath)
@@ -40,6 +44,9 @@ export default defineEventHandler(async (event) => {
   }
 
   const entry = entries[0]!
+  if (!isContainedIn(entry.installPath, homedir())) {
+    throw createError({ statusCode: 403, message: 'Plugin install path is outside home directory' })
+  }
   const skillPath = join(entry.installPath, 'skills', skill, 'SKILL.md')
   if (!existsSync(skillPath)) {
     throw createError({ statusCode: 404, message: `Skill not found: ${skill}` })
