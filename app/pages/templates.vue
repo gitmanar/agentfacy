@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { agentTemplates } from '~/utils/templates'
 import { commandTemplates } from '~/utils/commandTemplates'
+import { workflowTemplates } from '~/utils/workflowTemplates'
 import { getAgentColor, modelColors } from '~/utils/colors'
 
-const { create: createAgent } = useAgents()
+const { agents, create: createAgent } = useAgents()
 const { create: createCommand } = useCommands()
+const { create: createWorkflow } = useWorkflows()
 const router = useRouter()
 const toast = useToast()
 
 const creating = ref<string | null>(null)
 const searchQuery = ref('')
-const activeTab = ref<'agents' | 'commands'>('agents')
+const activeTab = ref<'agents' | 'commands' | 'workflows'>('agents')
 
 const agentCategories: Record<string, string[]> = {
   Development: ['code-reviewer', 'debug-helper', 'documentation-writer'],
@@ -87,6 +89,30 @@ async function useCommandTemplate(templateId: string) {
   }
 }
 
+async function useWorkflowTemplateAction(templateId: string) {
+  const template = workflowTemplates.find(t => t.id === templateId)
+  if (!template) return
+  creating.value = templateId
+  try {
+    const steps = []
+    for (const step of template.steps) {
+      const agentTemplate = agentTemplates.find(t => t.id === step.agentTemplateId)
+      if (!agentTemplate) continue
+      let agent = agents.value.find(a => a.slug === agentTemplate.frontmatter.name)
+      if (!agent) {
+        agent = await createAgent({ frontmatter: { ...agentTemplate.frontmatter }, body: agentTemplate.body })
+      }
+      steps.push({ id: crypto.randomUUID(), agentSlug: agent.slug, label: step.label })
+    }
+    const workflow = await createWorkflow({ name: template.name, description: template.description, steps })
+    router.push(`/workflows/${workflow.slug}`)
+  } catch (e: any) {
+    toast.add({ title: 'Failed to create', description: e.data?.message || e.message, color: 'error' })
+  } finally {
+    creating.value = null
+  }
+}
+
 const previewId = ref<string | null>(null)
 </script>
 
@@ -94,7 +120,7 @@ const previewId = ref<string | null>(null)
   <div>
     <PageHeader title="Templates">
       <template #trailing>
-        <span class="text-[12px] text-meta">{{ agentTemplates.length + commandTemplates.length }}</span>
+        <span class="text-[12px] text-meta">{{ agentTemplates.length + commandTemplates.length + workflowTemplates.length }}</span>
       </template>
     </PageHeader>
 
@@ -126,6 +152,17 @@ const previewId = ref<string | null>(null)
           @click="activeTab = 'commands'"
         >
           Commands ({{ commandTemplates.length }})
+        </button>
+        <button
+          class="px-3 py-1.5 rounded-md text-[12px] font-medium transition-all"
+          :style="{
+            background: activeTab === 'workflows' ? 'var(--surface-base)' : 'transparent',
+            color: activeTab === 'workflows' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+            boxShadow: activeTab === 'workflows' ? '0 1px 3px var(--card-shadow)' : 'none',
+          }"
+          @click="activeTab = 'workflows'"
+        >
+          Workflows ({{ workflowTemplates.length }})
         </button>
       </div>
 
@@ -205,6 +242,55 @@ const previewId = ref<string | null>(null)
 
         <div v-if="!filteredAgentTemplates.length" class="flex flex-col items-center justify-center py-12">
           <p class="text-[13px] text-label">No agent templates match your search.</p>
+        </div>
+      </template>
+
+      <!-- Workflow templates -->
+      <template v-if="activeTab === 'workflows'">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div
+            v-for="template in workflowTemplates"
+            :key="template.id"
+            class="rounded-xl overflow-hidden bg-card group"
+          >
+            <div class="p-4 space-y-3">
+              <div class="flex items-center gap-2.5">
+                <div
+                  class="size-8 rounded-lg flex items-center justify-center shrink-0"
+                  style="background: var(--accent-muted); border: 1px solid rgba(229, 169, 62, 0.15);"
+                >
+                  <UIcon :name="template.icon" class="size-4" style="color: var(--accent);" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-[13px] font-medium truncate">{{ template.name }}</div>
+                </div>
+              </div>
+
+              <p class="text-[12px] text-label leading-relaxed">
+                {{ template.description }}
+              </p>
+
+              <div class="flex items-center gap-1 flex-wrap">
+                <span
+                  v-for="(step, idx) in template.steps"
+                  :key="idx"
+                  class="text-[10px] font-mono text-meta"
+                >
+                  {{ step.label }}<span v-if="idx < template.steps.length - 1" class="mx-1" style="color: var(--text-disabled);">-></span>
+                </span>
+              </div>
+            </div>
+
+            <div class="px-4 py-3 flex items-center justify-end" style="border-top: 1px solid var(--border-subtle);">
+              <UButton
+                label="Use template"
+                size="sm"
+                :loading="creating === template.id"
+                :disabled="creating !== null && creating !== template.id"
+                @click="useWorkflowTemplateAction(template.id)"
+              />
+            </div>
+          </div>
         </div>
       </template>
 

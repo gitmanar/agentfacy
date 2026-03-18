@@ -213,23 +213,40 @@ const hasContent = computed(() =>
         </div>
       </div>
 
-      <!-- Graph CTA -->
-      <NuxtLink
-        v-if="hasContent"
-        to="/graph"
-        class="block rounded-xl p-5 focus-ring hover-card bg-card"
-      >
-        <div class="flex items-center gap-3">
-          <UIcon name="i-lucide-workflow" class="size-5" style="color: var(--accent);" />
-          <div class="flex-1">
-            <div class="text-[13px] font-medium">Relationship Graph</div>
-            <div class="text-[12px] text-label">
-              See how your agents, commands, and skills connect to each other
+      <!-- Quick links -->
+      <div v-if="hasContent" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <NuxtLink
+          to="/graph"
+          class="block rounded-xl p-5 focus-ring hover-card bg-card"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-workflow" class="size-5" style="color: var(--accent);" />
+            <div class="flex-1">
+              <div class="text-[13px] font-medium">Relationship Graph</div>
+              <div class="text-[12px] text-label">
+                See how your agents, commands, and skills connect to each other
+              </div>
             </div>
+            <UIcon name="i-lucide-arrow-right" class="size-4 text-meta" />
           </div>
-          <UIcon name="i-lucide-arrow-right" class="size-4 text-meta" />
-        </div>
-      </NuxtLink>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/workflows"
+          class="block rounded-xl p-5 focus-ring hover-card bg-card"
+        >
+          <div class="flex items-center gap-3">
+            <UIcon name="i-lucide-git-branch" class="size-5" style="color: var(--accent);" />
+            <div class="flex-1">
+              <div class="text-[13px] font-medium">Create a Workflow</div>
+              <div class="text-[12px] text-label">
+                Chain agents together into multi-step pipelines
+              </div>
+            </div>
+            <UIcon name="i-lucide-arrow-right" class="size-4 text-meta" />
+          </div>
+        </NuxtLink>
+      </div>
 
       <!-- Advanced: directory picker -->
       <details>

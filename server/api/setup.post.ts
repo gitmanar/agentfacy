@@ -15,6 +15,7 @@ export default defineEventHandler(async () => {
     resolveClaudePath('agents'),
     resolveClaudePath('commands'),
     resolveClaudePath('skills'),
+    resolveClaudePath('workflows'),
   ]
 
   for (const dir of dirs) {

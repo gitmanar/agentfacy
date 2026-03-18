@@ -5,12 +5,86 @@ const { fetchAll: fetchAgents, agents } = useAgents()
 const { fetchAll: fetchCommands, commands } = useCommands()
 const { fetchAll: fetchPlugins, plugins } = usePlugins()
 const { fetchAll: fetchSkills, skills } = useSkills()
+const { fetchAll: fetchWorkflows, workflows } = useWorkflows()
 
 const initialized = ref(false)
 const showSearch = ref(false)
 const sidebarOpen = ref(false)
-const chatOpen = ref(false)
+const { isPanelOpen: chatOpen } = useChat()
+const { workingDir, displayPath, setWorkingDir, clearWorkingDir } = useWorkingDir()
 const colorMode = useColorMode()
+
+const showWorkingDirPopover = ref(false)
+const workingDirInput = ref('')
+const dirSuggestions = ref<{ name: string; path: string; hasChildren: boolean }[]>([])
+const selectedSuggestionIdx = ref(-1)
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+function openWorkingDirPopover() {
+  workingDirInput.value = workingDir.value
+  dirSuggestions.value = []
+  selectedSuggestionIdx.value = -1
+  showWorkingDirPopover.value = true
+  // Fetch initial suggestions if there's already a path
+  if (workingDirInput.value) fetchDirSuggestions(workingDirInput.value)
+}
+
+function saveWorkingDir() {
+  setWorkingDir(workingDirInput.value)
+  showWorkingDirPopover.value = false
+  dirSuggestions.value = []
+}
+
+async function fetchDirSuggestions(path: string) {
+  if (!path) { dirSuggestions.value = []; return }
+  try {
+    const data = await $fetch<{ directories: typeof dirSuggestions.value }>('/api/directories', { query: { path } })
+    dirSuggestions.value = data.directories
+    selectedSuggestionIdx.value = -1
+  } catch {
+    dirSuggestions.value = []
+  }
+}
+
+function onDirInput() {
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => fetchDirSuggestions(workingDirInput.value), 150)
+}
+
+function selectSuggestion(suggestion: { name: string; path: string; hasChildren: boolean }) {
+  workingDirInput.value = suggestion.path
+  selectedSuggestionIdx.value = -1
+  // If it has children, fetch next level
+  if (suggestion.hasChildren) {
+    fetchDirSuggestions(suggestion.path)
+  } else {
+    dirSuggestions.value = []
+  }
+}
+
+function onDirKeydown(e: KeyboardEvent) {
+  if (!dirSuggestions.value.length) {
+    if (e.key === 'Enter') { e.preventDefault(); saveWorkingDir() }
+    return
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    selectedSuggestionIdx.value = Math.min(selectedSuggestionIdx.value + 1, dirSuggestions.value.length - 1)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    selectedSuggestionIdx.value = Math.max(selectedSuggestionIdx.value - 1, -1)
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (selectedSuggestionIdx.value >= 0) {
+      selectSuggestion(dirSuggestions.value[selectedSuggestionIdx.value]!)
+    } else {
+      saveWorkingDir()
+    }
+  } else if (e.key === 'Escape') {
+    dirSuggestions.value = []
+    selectedSuggestionIdx.value = -1
+  }
+}
 
 function toggleTheme() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
@@ -32,13 +106,14 @@ if (import.meta.client) {
 
 onMounted(async () => {
   await loadConfig()
-  await Promise.all([fetchAgents(), fetchCommands(), fetchPlugins(), fetchSkills()])
+  await Promise.all([fetchAgents(), fetchCommands(), fetchPlugins(), fetchSkills(), fetchWorkflows()])
   initialized.value = true
 })
 
 const navLinks = [
   { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
   { label: 'Agents', icon: 'i-lucide-cpu', to: '/agents' },
+  { label: 'Workflows', icon: 'i-lucide-git-branch', to: '/workflows' },
   { label: 'Commands', icon: 'i-lucide-terminal', to: '/commands' },
   { label: 'Skills', icon: 'i-lucide-sparkles', to: '/skills' },
   { label: 'Plugins', icon: 'i-lucide-puzzle', to: '/plugins' },
@@ -60,6 +135,7 @@ function badgeFor(to: string) {
   if (to === '/commands') return commands.value.length || null
   if (to === '/skills') return skills.value.length || null
   if (to === '/plugins') return plugins.value.length || null
+  if (to === '/workflows') return workflows.value.length || null
   return null
 }
 </script>
@@ -220,10 +296,90 @@ function badgeFor(to: string) {
           </button>
         </div>
 
-        <!-- Footer: directory -->
-        <div class="px-4 py-3" style="border-top: 1px solid var(--border-subtle);">
-          <div class="font-mono text-[9px] truncate tracking-wide" style="color: var(--text-disabled);">
-            {{ claudeDir || 'No directory set' }}
+        <!-- Footer: working directory -->
+        <div class="px-3 pb-3" style="border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
+          <UPopover v-model:open="showWorkingDirPopover" :ui="{ width: 'w-[280px]' }">
+            <button
+              class="w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-150 focus-ring cursor-pointer text-left"
+              style="color: var(--text-disabled); border: 1px solid var(--border-subtle);"
+              @click="openWorkingDirPopover"
+            >
+              <UIcon name="i-lucide-folder" class="size-3.5 shrink-0" :style="{ color: workingDir ? 'var(--accent)' : undefined }" />
+              <div class="flex-1 min-w-0">
+                <div v-if="workingDir" class="font-mono text-[10px] truncate" style="color: var(--text-secondary);">
+                  {{ displayPath }}
+                </div>
+                <div v-else class="text-[11px]" style="font-family: var(--font-sans);">
+                  Set project directory
+                </div>
+              </div>
+              <UIcon name="i-lucide-pencil" class="size-3 shrink-0" style="color: var(--text-disabled);" />
+            </button>
+            <template #content>
+              <div class="p-3 space-y-3">
+                <div class="text-[12px] font-semibold" style="color: var(--text-primary);">Working Directory</div>
+                <p class="text-[11px] leading-relaxed" style="color: var(--text-secondary);">
+                  Set the project directory for all chat conversations. Claude will operate in this directory.
+                </p>
+                <div class="relative">
+                  <input
+                    v-model="workingDirInput"
+                    class="field-input text-[12px] font-mono"
+                    placeholder="/path/to/your/project"
+                    autocomplete="off"
+                    @input="onDirInput"
+                    @keydown="onDirKeydown"
+                  />
+                  <!-- Directory suggestions -->
+                  <div
+                    v-if="dirSuggestions.length"
+                    class="mt-1 rounded-lg overflow-hidden max-h-[200px] overflow-y-auto"
+                    style="border: 1px solid var(--border-subtle); background: var(--surface-raised);"
+                  >
+                    <button
+                      v-for="(suggestion, idx) in dirSuggestions"
+                      :key="suggestion.path"
+                      type="button"
+                      class="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-colors duration-75"
+                      :style="{
+                        background: idx === selectedSuggestionIdx ? 'var(--accent-muted)' : 'transparent',
+                        color: idx === selectedSuggestionIdx ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      }"
+                      @click="selectSuggestion(suggestion)"
+                      @mouseenter="selectedSuggestionIdx = idx"
+                    >
+                      <UIcon
+                        :name="suggestion.hasChildren ? 'i-lucide-folder' : 'i-lucide-folder-dot'"
+                        class="size-3.5 shrink-0"
+                        :style="{ color: idx === selectedSuggestionIdx ? 'var(--accent)' : 'var(--text-disabled)' }"
+                      />
+                      <span class="text-[11px] font-mono truncate">{{ suggestion.name }}</span>
+                      <UIcon
+                        v-if="suggestion.hasChildren"
+                        name="i-lucide-chevron-right"
+                        class="size-3 shrink-0 ml-auto"
+                        style="color: var(--text-disabled);"
+                      />
+                    </button>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <button
+                    v-if="workingDir"
+                    class="text-[11px] font-medium px-2 py-1 rounded hover-bg"
+                    style="color: var(--error);"
+                    @click="clearWorkingDir(); showWorkingDirPopover = false"
+                  >
+                    Clear
+                  </button>
+                  <div v-else />
+                  <UButton label="Save" size="xs" @click="saveWorkingDir" />
+                </div>
+              </div>
+            </template>
+          </UPopover>
+          <div class="font-mono text-[9px] truncate tracking-wide mt-1.5 px-1" style="color: var(--text-disabled);">
+            {{ claudeDir || 'No config directory' }}
           </div>
         </div>
       </aside>
