@@ -5,6 +5,7 @@ const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const { fetchOne, update, remove } = useSkills()
+const { prefillSkill } = useChat()
 const { agents } = useAgents()
 
 const slug = route.params.slug as string
@@ -121,6 +122,14 @@ const agentOptions = computed(() =>
         <UIcon name="i-lucide-sparkles" class="size-4" style="color: var(--accent);" />
       </template>
       <template #right>
+        <UButton
+          label="Use"
+          icon="i-lucide-play"
+          size="sm"
+          variant="soft"
+          :disabled="!skill"
+          @click="prefillSkill(skill!.frontmatter.name)"
+        />
         <a
           :href="`/api/skills/${slug}/export`"
           download

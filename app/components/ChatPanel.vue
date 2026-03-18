@@ -4,7 +4,8 @@ import { renderMarkdown } from '~/utils/markdown'
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{ 'update:open': [value: boolean] }>()
 
-const { messages, isStreaming, error, activity, usedTools, sendMessage, stopStreaming, clearChat } = useChat()
+const { messages, isStreaming, error, activity, usedTools, sendMessage, stopStreaming, clearChat, activeAgent, pendingInput, clearAgent } = useChat()
+const { displayPath: projectDisplayPath } = useWorkingDir()
 const { fetchAll: fetchAgents } = useAgents()
 const { fetchAll: fetchCommands } = useCommands()
 const { fetchAll: fetchSkills } = useSkills()
@@ -33,6 +34,14 @@ onUnmounted(() => {
 // Focus input when panel opens
 watch(() => props.open, (val) => {
   if (val) nextTick(() => inputRef.value?.focus())
+})
+
+watch(pendingInput, (val) => {
+  if (val) {
+    input.value = val
+    pendingInput.value = ''
+    nextTick(() => inputRef.value?.focus())
+  }
 })
 
 // Escape to dismiss
@@ -196,7 +205,7 @@ function isLastAssistantStreaming(idx: number): boolean {
               </span>
             </div>
             <span class="text-[10px] font-mono" style="color: var(--text-disabled);">
-              Agent Manager
+              {{ activeAgent ? activeAgent.name : 'Agent Manager' }}
             </span>
           </div>
 
@@ -205,7 +214,7 @@ function isLastAssistantStreaming(idx: number): boolean {
             class="p-1.5 rounded-lg transition-all hover-bg"
             style="color: var(--text-disabled);"
             title="New conversation"
-            @click="clearChat"
+            @click="() => { clearChat(); clearAgent() }"
           >
             <UIcon name="i-lucide-rotate-ccw" class="size-3.5" />
           </button>
@@ -228,10 +237,39 @@ function isLastAssistantStreaming(idx: number): boolean {
         </div>
       </div>
 
+      <!-- Active agent banner -->
+      <div
+        v-if="activeAgent"
+        class="shrink-0 px-5 py-2 flex items-center gap-2.5"
+        style="background: var(--surface-raised); border-bottom: 1px solid var(--border-subtle);"
+      >
+        <div
+          class="size-2 rounded-full shrink-0"
+          :style="{ background: activeAgent.color || 'var(--accent)' }"
+        />
+        <span class="text-[12px] font-medium flex-1 truncate" style="color: var(--text-primary); font-family: var(--font-sans);">
+          Chatting with <strong>{{ activeAgent.name }}</strong>
+        </span>
+        <button
+          class="p-1 rounded-md hover-bg transition-all"
+          style="color: var(--text-disabled);"
+          title="Switch to generic Claude"
+          @click="clearAgent"
+        >
+          <UIcon name="i-lucide-x" class="size-3" />
+        </button>
+      </div>
+
       <!-- Messages -->
       <div ref="messagesContainer" class="flex-1 overflow-y-auto px-5 py-4 space-y-5">
         <!-- Empty state -->
         <div v-if="!messages.length" class="flex flex-col items-center justify-center h-full gap-6">
+          <FeatureCallout
+            feature-key="chat"
+            message="You can ask Claude anything — create agents, get help, or manage your workspace."
+            action="Try asking 'Help me create an agent for writing emails'."
+          />
+
           <!-- Orb -->
           <div class="relative">
             <div
@@ -390,14 +428,19 @@ function isLastAssistantStreaming(idx: number): boolean {
             rows="1"
             class="w-full resize-none bg-transparent text-[13px] outline-none px-4 pt-3 pb-10"
             style="color: var(--text-primary); font-family: var(--font-sans); max-height: 120px;"
-            placeholder="Tell Claude what to do..."
+            :placeholder="activeAgent ? `Ask ${activeAgent.name} something...` : 'Tell Claude what to do...'"
             :disabled="isStreaming"
             @keydown="handleKeydown"
             @input="autoResize"
           />
 
           <div class="absolute bottom-2.5 left-3 right-3 flex items-center justify-between">
-            <span class="text-[10px] font-mono" style="color: var(--text-disabled);">
+            <span class="text-[10px] font-mono flex items-center gap-1.5" style="color: var(--text-disabled);">
+              <template v-if="projectDisplayPath">
+                <UIcon name="i-lucide-folder" class="size-3" style="color: var(--accent);" />
+                <span class="truncate max-w-[120px]">{{ projectDisplayPath }}</span>
+                <span>&middot;</span>
+              </template>
               &#x23CE; Send &middot; &#x21E7;&#x23CE; New line
             </span>
 

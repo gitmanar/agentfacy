@@ -1,53 +1,15 @@
 import { query } from '@anthropic-ai/claude-agent-sdk'
-import { getClaudeDir } from '../utils/claudeDir'
+import { existsSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
+import { getClaudeDir, resolveClaudePath } from '../utils/claudeDir'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
 }
 
-export default defineEventHandler(async (event) => {
-  const body = await readBody<{ messages: ChatMessage[]; sessionId?: string }>(event)
-
-  if (!body.messages?.length) {
-    throw createError({ statusCode: 400, message: 'messages is required' })
-  }
-
-  const lastUserMessage = body.messages.filter(m => m.role === 'user').pop()
-  if (!lastUserMessage) {
-    throw createError({ statusCode: 400, message: 'No user message found' })
-  }
-
-  const claudeDir = getClaudeDir()
-
-  // Set up SSE headers
-  setResponseHeaders(event, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  })
-
-  const sendEvent = (type: string, data: unknown) => {
-    event.node.res.write(`data: ${JSON.stringify({ type, ...data as object })}\n\n`)
-  }
-
-  try {
-    let sessionId = body.sessionId || null
-    let resultText = ''
-
-    for await (const message of query({
-      prompt: lastUserMessage.content,
-      options: {
-        cwd: claudeDir,
-        allowedTools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
-        permissionMode: 'bypassPermissions',
-        allowDangerouslySkipPermissions: true,
-        maxTurns: 10,
-        includePartialMessages: true,
-        systemPrompt: {
-          type: 'preset',
-          preset: 'claude_code',
-          append: `You are an assistant integrated into the Agent Manager UI. The user is managing their Claude Code agents, commands, skills, and plugins through a web interface.
+function defaultManagerPrompt(claudeDir: string): string {
+  return `You are an assistant integrated into the Agent Manager UI. The user is managing their Claude Code agents, commands, skills, and plugins through a web interface.
 
 The current working directory is the user's Claude configuration folder: ${claudeDir}
 
@@ -72,7 +34,69 @@ You can create, read, update, and delete any of these files. You can also:
 - For destructive operations (delete, overwrite), list exactly what will be affected and ask for confirmation.
 - When creating agents, use the YAML frontmatter format with --- delimiters.
 - Keep the user informed of progress during multi-step operations.
-- If the user describes what they need in plain English, translate that into the right agent/command/skill configuration.`,
+- If the user describes what they need in plain English, translate that into the right agent/command/skill configuration.`
+}
+
+export default defineEventHandler(async (event) => {
+  const body = await readBody<{ messages: ChatMessage[]; sessionId?: string; agentSlug?: string; projectDir?: string }>(event)
+
+  if (!body.messages?.length) {
+    throw createError({ statusCode: 400, message: 'messages is required' })
+  }
+
+  const lastUserMessage = body.messages.filter(m => m.role === 'user').pop()
+  if (!lastUserMessage) {
+    throw createError({ statusCode: 400, message: 'No user message found' })
+  }
+
+  const claudeDir = getClaudeDir()
+
+  // Build system prompt depending on whether an agent is active
+  let systemAppend: string
+
+  if (body.agentSlug) {
+    const agentPath = resolveClaudePath('agents', `${body.agentSlug}.md`)
+    if (existsSync(agentPath)) {
+      const { parseFrontmatter } = await import('../utils/frontmatter')
+      const raw = await readFile(agentPath, 'utf-8')
+      const { frontmatter, body: agentBody } = parseFrontmatter<{ name?: string }>(raw)
+      const agentName = frontmatter.name || body.agentSlug
+      systemAppend = `You are "${agentName}", a specialized agent. Follow these instructions precisely:\n\n${agentBody}\n\nThe current working directory is: ${claudeDir}`
+    } else {
+      systemAppend = defaultManagerPrompt(claudeDir)
+    }
+  } else {
+    systemAppend = defaultManagerPrompt(claudeDir)
+  }
+
+  // Set up SSE headers
+  setResponseHeaders(event, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  })
+
+  const sendEvent = (type: string, data: unknown) => {
+    event.node.res.write(`data: ${JSON.stringify({ type, ...data as object })}\n\n`)
+  }
+
+  try {
+    let sessionId = body.sessionId || null
+    let resultText = ''
+
+    for await (const message of query({
+      prompt: lastUserMessage.content,
+      options: {
+        cwd: body.projectDir && existsSync(body.projectDir) ? body.projectDir : claudeDir,
+        allowedTools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
+        permissionMode: 'bypassPermissions',
+        allowDangerouslySkipPermissions: true,
+        maxTurns: 10,
+        includePartialMessages: true,
+        systemPrompt: {
+          type: 'preset',
+          preset: 'claude_code',
+          append: systemAppend,
         },
         ...(sessionId ? { resume: sessionId } : {}),
       },

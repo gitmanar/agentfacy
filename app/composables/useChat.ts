@@ -1,3 +1,5 @@
+import type { SkillInvocation } from '~/types'
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -18,6 +20,10 @@ export function useChat() {
   const sessionId = useState<string | null>('chat-session', () => null)
   const error = ref<string | null>(null)
   const activity = ref<StreamActivity>(null)
+
+  const isPanelOpen = useState<boolean>('chat-panel-open', () => false)
+  const activeAgent = useState<{ slug: string; name: string; color?: string } | null>('chat-active-agent', () => null)
+  const pendingInput = useState<string>('chat-pending-input', () => '')
 
   let abortController: AbortController | null = null
 
@@ -48,6 +54,24 @@ export function useChat() {
     usedTools.value = false
     addMessage('user', content)
 
+    // Parse slash command
+    let invoke: SkillInvocation | undefined
+    const trimmed = content.trim()
+    if (trimmed.startsWith('/')) {
+      const withoutSlash = trimmed.slice(1)
+      const spaceIdx = withoutSlash.indexOf(' ')
+      if (spaceIdx === -1) {
+        invoke = { skill: withoutSlash, args: null }
+      } else {
+        invoke = {
+          skill: withoutSlash.slice(0, spaceIdx),
+          args: withoutSlash.slice(spaceIdx + 1).trim() || null,
+        }
+      }
+    }
+
+    const { workingDir } = useWorkingDir()
+
     const assistantMsg = addMessage('assistant', '')
     isStreaming.value = true
     activity.value = null
@@ -62,6 +86,9 @@ export function useChat() {
             .filter(m => m.content)
             .map(m => ({ role: m.role, content: m.content })),
           sessionId: sessionId.value,
+          ...(invoke ? { invoke } : {}),
+          ...(activeAgent.value ? { agentSlug: activeAgent.value.slug } : {}),
+          ...(workingDir.value ? { projectDir: workingDir.value } : {}),
         },
         signal: abortController.signal,
         responseType: 'stream',
@@ -137,6 +164,26 @@ export function useChat() {
     activity.value = null
   }
 
+  function startWithPrompt(prompt: string) {
+    clearChat()
+    nextTick(() => sendMessage(prompt))
+  }
+
+  function startAgentChat(agent: { slug: string; name: string; color?: string }) {
+    activeAgent.value = agent
+    clearChat()
+    isPanelOpen.value = true
+  }
+
+  function prefillSkill(skillName: string) {
+    pendingInput.value = `/${skillName} `
+    isPanelOpen.value = true
+  }
+
+  function clearAgent() {
+    activeAgent.value = null
+  }
+
   return {
     messages: readonly(messages),
     isStreaming: readonly(isStreaming),
@@ -144,8 +191,15 @@ export function useChat() {
     activity: readonly(activity),
     sessionId: readonly(sessionId),
     usedTools: readonly(usedTools),
+    isPanelOpen,
+    activeAgent: readonly(activeAgent),
+    pendingInput,
     sendMessage,
     stopStreaming,
     clearChat,
+    startWithPrompt,
+    startAgentChat,
+    prefillSkill,
+    clearAgent,
   }
 }
