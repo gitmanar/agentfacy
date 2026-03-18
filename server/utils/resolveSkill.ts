@@ -1,8 +1,10 @@
 import { existsSync } from 'node:fs'
 import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
+import { homedir } from 'node:os'
 import { resolveClaudePath } from './claudeDir'
 import { parseFrontmatter } from './frontmatter'
+import { isContainedIn } from './security'
 import type { SkillFrontmatter, CommandFrontmatter } from '~/types'
 
 interface ResolvedSkill {
@@ -76,6 +78,7 @@ async function resolveFromPluginSkills(
   for (const entries of Object.values(installed.plugins)) {
     const entry = entries[0]
     if (!entry) continue
+    if (!isContainedIn(entry.installPath, homedir())) continue
 
     const skillPath = join(entry.installPath, 'skills', name, 'SKILL.md')
     if (!existsSync(skillPath)) continue

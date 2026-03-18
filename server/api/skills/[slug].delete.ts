@@ -1,9 +1,11 @@
 import { rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
+import { validateSlug } from '../../utils/security'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
+  validateSlug(slug)
   const skillDir = resolveClaudePath('skills', slug)
 
   if (!existsSync(skillDir)) {

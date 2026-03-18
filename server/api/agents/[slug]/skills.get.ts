@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolveClaudePath } from '../../../utils/claudeDir'
 import { parseFrontmatter } from '../../../utils/frontmatter'
+import { validateSlug } from '../../../utils/security'
 import type { SkillFrontmatter } from '~/types'
 
 interface InstalledEntry {
@@ -32,6 +33,7 @@ async function readJson<T>(path: string): Promise<T | null> {
 
 export default defineEventHandler(async (event) => {
   const agentSlug = getRouterParam(event, 'slug')!
+  validateSlug(agentSlug)
   const results: AgentSkill[] = []
 
   // 1. Search standalone skills

@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { serializeFrontmatter } from '../../utils/frontmatter'
+import { validateSlug } from '../../utils/security'
 import type { SkillPayload } from '~/types'
 
 interface InstalledEntry {
@@ -42,6 +43,7 @@ async function findSkillDir(slug: string): Promise<string | null> {
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
+  validateSlug(slug)
   const skillDir = await findSkillDir(slug)
 
   if (!skillDir) {
@@ -53,7 +55,7 @@ export default defineEventHandler(async (event) => {
 
   // For standalone skills, support rename
   const isStandalone = skillDir.startsWith(resolveClaudePath('skills'))
-  const newSlug = payload.frontmatter.name
+  const newSlug = validateSlug(payload.frontmatter.name)
 
   if (isStandalone && slug !== newSlug) {
     const newSkillDir = resolveClaudePath('skills', newSlug)

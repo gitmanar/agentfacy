@@ -2,10 +2,12 @@ import { readFile, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { parseFrontmatter } from '../../utils/frontmatter'
+import { validateSlug } from '../../utils/security'
 import type { AgentFrontmatter } from '~/types'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
+  validateSlug(slug)
   const filePath = resolveClaudePath('agents', `${slug}.md`)
 
   if (!existsSync(filePath)) {

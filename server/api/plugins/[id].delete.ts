@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
+import { validatePluginId } from '../../utils/security'
 
 interface InstalledEntry {
   installPath: string
@@ -19,6 +20,7 @@ async function readJson<T>(path: string): Promise<T | null> {
 
 export default defineEventHandler(async (event) => {
   const id = decodeURIComponent(getRouterParam(event, 'id')!)
+  validatePluginId(id)
 
   // Remove from installed_plugins.json
   const installedPath = resolveClaudePath('plugins', 'installed_plugins.json')

@@ -2,6 +2,7 @@ import { writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { parseFrontmatter, serializeFrontmatter } from '../../utils/frontmatter'
+import { validateSlug } from '../../utils/security'
 import type { AgentFrontmatter } from '~/types'
 
 export default defineEventHandler(async (event) => {
@@ -17,7 +18,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Agent file must have a name in frontmatter' })
   }
 
-  const slug = frontmatter.name
+  const slug = validateSlug(frontmatter.name)
   const agentsDir = resolveClaudePath('agents')
   if (!existsSync(agentsDir)) {
     await mkdir(agentsDir, { recursive: true })

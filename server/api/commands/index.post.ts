@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { serializeFrontmatter } from '../../utils/frontmatter'
+import { validateSlug } from '../../utils/security'
 import type { CommandPayload } from '~/types'
 
 export default defineEventHandler(async (event) => {
@@ -10,9 +11,17 @@ export default defineEventHandler(async (event) => {
   const name = payload.frontmatter.name
   const directory = payload.directory || ''
 
-  // Derive filename from the command name
+  // Validate directory segments
+  if (directory) {
+    for (const seg of directory.split('/')) {
+      if (seg) validateSlug(seg)
+    }
+  }
+
+  // Derive filename from the command name and validate
   const nameParts = name.split(':')
   const fileBaseName = nameParts.length > 1 ? nameParts.slice(1).join('-') : name
+  validateSlug(fileBaseName)
   const filename = `${fileBaseName}.md`
 
   const dir = directory

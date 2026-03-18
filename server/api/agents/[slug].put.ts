@@ -2,10 +2,12 @@ import { writeFile, rename, mkdir, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { serializeFrontmatter } from '../../utils/frontmatter'
+import { validateSlug } from '../../utils/security'
 import type { AgentPayload } from '~/types'
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
+  validateSlug(slug)
   const filePath = resolveClaudePath('agents', `${slug}.md`)
 
   if (!existsSync(filePath)) {
@@ -21,7 +23,7 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 409, message: 'This file was modified externally. Reload to see the latest version.' })
     }
   }
-  const newSlug = payload.frontmatter.name
+  const newSlug = validateSlug(payload.frontmatter.name)
   const newFilePath = resolveClaudePath('agents', `${newSlug}.md`)
 
   const content = serializeFrontmatter(payload.frontmatter, payload.body)

@@ -2,6 +2,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk'
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { getClaudeDir, resolveClaudePath } from '../utils/claudeDir'
+import { validateSlug, validateProjectDir } from '../utils/security'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -55,6 +56,7 @@ export default defineEventHandler(async (event) => {
   let systemAppend: string
 
   if (body.agentSlug) {
+    validateSlug(body.agentSlug)
     const agentPath = resolveClaudePath('agents', `${body.agentSlug}.md`)
     if (existsSync(agentPath)) {
       const { parseFrontmatter } = await import('../utils/frontmatter')
@@ -68,6 +70,20 @@ export default defineEventHandler(async (event) => {
   } else {
     systemAppend = defaultManagerPrompt(claudeDir)
   }
+
+  // Validate projectDir against allowlist from settings
+  let allowedProjectDirs: string[] = []
+  try {
+    const settingsPath = resolveClaudePath('settings.json')
+    if (existsSync(settingsPath)) {
+      const settingsRaw = await readFile(settingsPath, 'utf-8')
+      const settings = JSON.parse(settingsRaw)
+      if (Array.isArray(settings.allowedProjectDirs)) {
+        allowedProjectDirs = settings.allowedProjectDirs.filter((d: unknown) => typeof d === 'string')
+      }
+    }
+  } catch { /* settings unreadable — use empty allowlist */ }
+  const validatedProjectDir = validateProjectDir(body.projectDir, claudeDir, allowedProjectDirs)
 
   // Set up SSE headers
   setResponseHeaders(event, {
@@ -87,10 +103,9 @@ export default defineEventHandler(async (event) => {
     for await (const message of query({
       prompt: lastUserMessage.content,
       options: {
-        cwd: body.projectDir && existsSync(body.projectDir) ? body.projectDir : claudeDir,
+        cwd: validatedProjectDir,
         allowedTools: ['Read', 'Write', 'Edit', 'Glob', 'Grep'],
-        permissionMode: 'bypassPermissions',
-        allowDangerouslySkipPermissions: true,
+        permissionMode: 'acceptEdits',
         maxTurns: 10,
         includePartialMessages: true,
         systemPrompt: {

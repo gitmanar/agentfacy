@@ -3,11 +3,12 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { serializeFrontmatter } from '../../utils/frontmatter'
+import { validateSlug } from '../../utils/security'
 import type { SkillPayload } from '~/types'
 
 export default defineEventHandler(async (event) => {
   const payload = await readBody<SkillPayload>(event)
-  const slug = payload.frontmatter.name
+  const slug = validateSlug(payload.frontmatter.name)
 
   const skillDir = resolveClaudePath('skills', slug)
   const skillPath = join(skillDir, 'SKILL.md')

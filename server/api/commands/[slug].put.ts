@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { serializeFrontmatter } from '../../utils/frontmatter'
+import { validateCommandSlug } from '../../utils/security'
 import type { CommandPayload } from '~/types'
 
 function slugToPath(slug: string): { directory: string; filename: string } {
@@ -16,6 +17,7 @@ function slugToPath(slug: string): { directory: string; filename: string } {
 
 export default defineEventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')!
+  validateCommandSlug(slug)
   const { directory, filename } = slugToPath(slug)
   const filePath = directory
     ? resolveClaudePath('commands', directory, filename)

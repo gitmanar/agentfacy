@@ -1,5 +1,5 @@
 import { readdirSync, statSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
+import { resolve, dirname, sep } from 'node:path'
 import { homedir } from 'node:os'
 
 export default defineEventHandler((event) => {
@@ -19,6 +19,13 @@ export default defineEventHandler((event) => {
   } else {
     dirToList = dirname(input)
     prefix = input.slice(dirToList.length).replace(/^\//, '').toLowerCase()
+  }
+
+  // Restrict to home directory
+  const resolvedDir = resolve(dirToList)
+  const home = resolve(homedir())
+  if (!resolvedDir.startsWith(home + sep) && resolvedDir !== home) {
+    return { directories: [], basePath: dirToList }
   }
 
   try {

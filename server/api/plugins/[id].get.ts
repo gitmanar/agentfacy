@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { parseFrontmatter } from '../../utils/frontmatter'
+import { validatePluginId } from '../../utils/security'
 import type { PluginDetail, SkillFrontmatter } from '~/types'
 
 interface InstalledEntry {
@@ -32,6 +33,7 @@ async function readJson<T>(path: string): Promise<T | null> {
 
 export default defineEventHandler(async (event) => {
   const id = decodeURIComponent(getRouterParam(event, 'id')!)
+  validatePluginId(id)
   const installedPath = resolveClaudePath('plugins', 'installed_plugins.json')
   const settingsPath = resolveClaudePath('settings.json')
 

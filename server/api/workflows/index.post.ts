@@ -13,6 +13,9 @@ export default defineEventHandler(async (event) => {
   if (!body.name?.trim()) {
     throw createError({ statusCode: 400, message: 'name is required' })
   }
+  if (body.name.length > 256) {
+    throw createError({ statusCode: 400, message: 'name exceeds maximum length' })
+  }
 
   const dir = resolveClaudePath('workflows')
   if (!existsSync(dir)) await mkdir(dir, { recursive: true })

@@ -2,11 +2,12 @@ import { writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolveClaudePath } from '../../utils/claudeDir'
 import { serializeFrontmatter } from '../../utils/frontmatter'
+import { validateSlug } from '../../utils/security'
 import type { AgentPayload } from '~/types'
 
 export default defineEventHandler(async (event) => {
   const payload = await readBody<AgentPayload>(event)
-  const slug = payload.frontmatter.name
+  const slug = validateSlug(payload.frontmatter.name)
   const filePath = resolveClaudePath('agents', `${slug}.md`)
 
   if (existsSync(filePath)) {

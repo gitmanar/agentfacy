@@ -16,7 +16,7 @@ if (!existsSync(outputServer)) {
 
 const port = process.env.PORT || 3000
 process.env.PORT = String(port)
-process.env.HOST = process.env.HOST || '0.0.0.0'
+process.env.HOST = process.env.HOST || '127.0.0.1'
 
 console.log(`Starting agents-ui on http://localhost:${port}`)
 
