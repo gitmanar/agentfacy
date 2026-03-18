@@ -18,12 +18,13 @@ export default defineEventHandler((event) => {
   }
 
   // Localhost bypass
-  const remoteAddress = event.node.req.socket.remoteAddress
-  if (
-    remoteAddress === '127.0.0.1' ||
+  const remoteAddress = event.node.req.socket.remoteAddress || ''
+  const isLocalhost = remoteAddress === '127.0.0.1' ||
     remoteAddress === '::1' ||
-    remoteAddress === '::ffff:127.0.0.1'
-  ) {
+    remoteAddress === '::ffff:127.0.0.1' ||
+    remoteAddress.endsWith(':127.0.0.1') ||
+    remoteAddress === '' // dev server proxied requests may have no remote address
+  if (isLocalhost) {
     return
   }
 
