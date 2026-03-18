@@ -52,5 +52,14 @@ export function useCommands() {
     return groups
   })
 
-  return { commands, loading, error, fetchAll, fetchOne, create, update, remove, groupedByDirectory }
+  function getCommandsForAgent(agentSlug: string, agentName: string, allCommands: Command[]): Command[] {
+    const slugLower = agentSlug.toLowerCase()
+    const nameLower = agentName.toLowerCase()
+    return allCommands.filter(cmd => {
+      const bodyLower = cmd.body.toLowerCase()
+      return bodyLower.includes(`/${slugLower}`) || bodyLower.includes(slugLower) || bodyLower.includes(nameLower)
+    })
+  }
+
+  return { commands, loading, error, fetchAll, fetchOne, create, update, remove, groupedByDirectory, getCommandsForAgent }
 }
